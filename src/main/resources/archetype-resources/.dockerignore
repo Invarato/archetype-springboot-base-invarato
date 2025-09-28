@@ -1,0 +1,43 @@
+# Ignorar archivos de código fuente de tu IDE (ejemplo IntelliJ IDEA, VSCode, etc.)
+.idea
+.vscode
+.project
+.settings
+.classpath
+
+# Ignorar archivos de construcción
+target
+build
+
+# Ignorar dependencias
+*.jar
+*.war
+*.ear
+
+# Ignorar configuraciones específicas del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de entorno
+.env
+
+# Ignorar archivos de configuración de contenedores
+compose.yml
+compose-app.yml
+docker-compose.yml
+docker-compose.override.yml
+
+# Ignorar archivos de control de versiones
+.git
+.gitignore
+.gitattributes
+
+# Ignorar node_modules (para proyectos JavaScript/Node.js)
+node_modules
+npm-debug.log
+
+# Ignorar registros y archivos temporales
+*.log
+*.tmp
+*.swp
+*.swo

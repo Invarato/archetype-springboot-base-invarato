@@ -1,0 +1,36 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.jarroba</groupId>
+    <artifactId>archetype-springboot-base-invarato</artifactId>
+    <name>archetype-springboot-base-invarato</name>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>maven-archetype</packaging>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.archetype</groupId>
+                <artifactId>archetype-packaging</artifactId>
+                <version>3.2.1</version>
+            </extension>
+        </extensions>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-archetype-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                     <!-- Required so that .gitignore gets included in archetypes -->
+                    <useDefaultExcludes>false</useDefaultExcludes>
+                </configuration>
+            </plugin>
+
+
+        </plugins>
+
+    </build>
+
+</project>

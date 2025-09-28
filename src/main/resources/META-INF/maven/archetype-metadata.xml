@@ -1,0 +1,84 @@
+<archetype-descriptor
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
+        xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 https://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
+        name="arquetipo">
+
+    <requiredProperties>
+        <requiredProperty key="groupId">
+            <defaultValue>${groupId}</defaultValue>
+        </requiredProperty>
+
+        <requiredProperty key="artifactId">
+            <defaultValue>${artifactId}</defaultValue>
+        </requiredProperty>
+
+        <requiredProperty key="versionStart">
+            <defaultValue>1.0-SNAPSHOT</defaultValue>
+        </requiredProperty>
+
+    </requiredProperties>
+
+    <fileSets>
+
+        <fileSet filtered="true" packaged="true">
+            <directory>src/main/java</directory>
+        </fileSet>
+
+        <fileSet filtered="false" packaged="false">
+            <directory>docker</directory>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="false" preserve-empty-dirs="true">
+            <directory>src/main/resources</directory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <excludes>
+                <exclude>**/*.properties</exclude>
+                <exclude>**/.gitkeep</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>src/main/resources</directory>
+            <includes>
+                <include>**/*.properties</include>
+            </includes>
+        </fileSet>
+
+        <fileSet filtered="true" packaged="true">
+            <directory>src/test/java</directory>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>src/test/resources</directory>
+            <includes>
+                <include>**/*.properties</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8">
+            <directory></directory>
+            <includes>
+                <include>compose.yml</include>
+                <include>Dockerfile</include>
+                <include>mvnw</include>
+                <include>mvnw.cmd</include>
+                <include>.gitignore</include>
+                <include>.dockerignore</include>
+                <include>liquibase.sh</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory></directory>
+            <includes>
+                <include>compose-app.yml</include>
+                <include>readme.md</include>
+            </includes>
+        </fileSet>
+
+    </fileSets>
+
+</archetype-descriptor>

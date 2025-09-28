@@ -1,0 +1,18 @@
+databaseChangeLog:
+  # Primero estructura/schema
+  - includeAll:
+      path: changes/schema/
+      relativeToChangelogFile: true
+      errorIfMissingOrEmpty: false
+
+  # Luego constraints
+  - includeAll:
+      path: changes/constraints/
+      relativeToChangelogFile: true
+      errorIfMissingOrEmpty: false
+
+  # Finalmente data
+  - includeAll:
+      path: changes/data/
+      relativeToChangelogFile: true
+      errorIfMissingOrEmpty: false
