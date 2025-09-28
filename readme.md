@@ -46,3 +46,12 @@ Or
 ````shell
 wsl bash restart_build.sh
 ````
+
+
+
+# Otros
+
+
+````shell
+wsl maven clean install
+````
