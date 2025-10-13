@@ -137,6 +137,7 @@ mvn clean install central-publishing:publish -Darchetype.jar.included
 ```
 
 5) Descargar
+Con comando
 ````shell
 mvn archetype:generate \
   -DarchetypeGroupId=com.jarroba \
@@ -146,6 +147,12 @@ mvn archetype:generate \
   -DartifactId=mi-proyecto \
   -Dversion=1.0.0
 ````
+
+Desde web busque `com.jarroba archetype-springboot-base-invarato` en:
+ * Maven Central (propagación inmediata): https://search.maven.org/
+ * MVNRepository (tarda en propagar): https://mvnrepository.com/
+ * Maven Repository Search (tarda en propagar): https://repository.sonatype.org/
+
 
 Notas:
 - (No logrado) No es necesario firmar artefactos con GPG cuando usas el portal de Sonatype con el plugin central-publishing.
