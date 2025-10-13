@@ -4,9 +4,34 @@
 
     <groupId>com.jarroba</groupId>
     <artifactId>archetype-springboot-base-invarato</artifactId>
-    <name>archetype-springboot-base-invarato</name>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>maven-archetype</packaging>
+
+
+    <name>Archetype SpringBoot Base Invarato</name>
+    <description>Base archetype for SpringBoot projects with standard configurations</description>
+    <url>https://github.com/Invarato/archetype-springboot-base-invarato</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Ramon Invarato</name>
+            <email>r.invarato@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/su-usuario/archetype-springboot-base-invarato.git</connection>
+        <url>https://github.com/su-usuario/archetype-springboot-base-invarato</url>
+    </scm>
+
+
 
     <build>
         <extensions>
@@ -28,6 +53,15 @@
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.9.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
 
         </plugins>
 

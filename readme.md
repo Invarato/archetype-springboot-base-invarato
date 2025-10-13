@@ -55,3 +55,38 @@ wsl bash restart_build.sh
 ````shell
 wsl maven clean install
 ````
+
+
+# Subir
+https://central.sonatype.com/
+https://central.sonatype.org/publish/publish-portal-maven/
+
+
+https://central.sonatype.org/publish/generate-portal-token/
+
+
+`````xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 
+          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    
+    <servers>
+        <server>
+            <id>central</id>
+            <username>YOUR_SONATYPE_USERNAME</username>
+            <password>YOUR_SONATYPE_PASSWORD</password>
+        </server>
+    </servers>
+    
+</settings>
+`````
+
+````shell
+# Limpiar y compilar
+mvn clean install
+
+# Publicar en Maven Central
+mvn central-publishing:publish
+````
