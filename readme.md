@@ -86,17 +86,69 @@ Este proyecto usa el Central Publishing Plugin de Sonatype. Pasos resumidos:
       <password>your-portal-token</password>
     </server>
   </servers>
+
+<!--  Creo que no hace falta-->
+<!--  <profiles>-->
+<!--      <profile>-->
+<!--          <id>ossrh</id>-->
+<!--          <properties>-->
+<!--              <gpg.executable>gpg</gpg.executable>-->
+<!--              <gpg.passphrase>SU_CONTRASEÑA_GPG</gpg.passphrase>-->
+<!--          </properties>-->
+<!--      </profile>-->
+<!--  </profiles>-->
+    
 </settings>
 ```
 
-3) Compila y publica
+3) Crear claves GPG (con linux)
+https://central.sonatype.org/publish/requirements/gpg/
+````shell
+gpg --version
+# Generating a Key Pair
+gpg --gen-key
+# Listar claves para obtener el ID.
+gpg --list-keys
+# Ejemplo de salida:
+# pub   rsa3072 2024-02-13 [SC] [expires: 2026-02-12]
+#       AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555  # Este es el ID completo
+# uid           [ultimate] Su Nombre <su.email@ejemplo.com>
+# sub   rsa3072 2024-02-13 [E] [expires: 2026-02-12]
+
+# Enviar clave a keyserver.ubuntu.com
+
+# Enviar clave los servidores
+#gpg --keyserver keyserver.ubuntu.com --send-keys AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555
+#gpg --keyserver keys.openpgp.org --send-keys AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555
+#gpg --keyserver pgp.mit.edu --send-keys AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555
+
+# O Enviar clave a varios keyservers compatibles
+KEY_ID="AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555" && for server in keyserver.ubuntu.com keys.openpgp.org pgp.mit.edu; do gpg --keyserver "$server" --send-keys "$KEY_ID"; done
+
+````
+
+
+4) Compila y publica (con linux)
 ```shell
-mvn clean install
-mvn central-publishing:publish
+#mvn clean install
+#mvn central-publishing:publish
+#mvn clean install central-publishing:publish
+mvn clean install central-publishing:publish -Darchetype.jar.included
 ```
 
+5) Descargar
+````shell
+mvn archetype:generate \
+  -DarchetypeGroupId=com.jarroba \
+  -DarchetypeArtifactId=archetype-springboot-base-invarato \
+  -DarchetypeVersion=1.0.0 \
+  -DgroupId=com.ejemplo \
+  -DartifactId=mi-proyecto \
+  -Dversion=1.0.0
+````
+
 Notas:
-- No es necesario firmar artefactos con GPG cuando usas el portal de Sonatype con el plugin central-publishing.
+- (No logrado) No es necesario firmar artefactos con GPG cuando usas el portal de Sonatype con el plugin central-publishing.
 - Asegúrate de que el POM contenga: name, description, url, licenses, developers y scm (ya configurados).
 
 
