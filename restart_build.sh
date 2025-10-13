@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Default values
-readonly DEFAULT_ARCHETYPE_VERSION="1.0.0-SNAPSHOT"
+readonly DEFAULT_ARCHETYPE_VERSION="1.0.0"
 readonly DEFAULT_ARTIFACT_ID="projectTestForAnalysis"
 readonly ARCHETYPE_GROUP_ID="com.jarroba"
 readonly ARCHETYPE_ARTIFACT_ID="archetype-springboot-base-invarato"

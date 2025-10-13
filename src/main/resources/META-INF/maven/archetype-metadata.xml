@@ -14,7 +14,15 @@
         </requiredProperty>
 
         <requiredProperty key="versionStart">
-            <defaultValue>1.0-SNAPSHOT</defaultValue>
+<!--            <defaultValue>1.0-SNAPSHOT</defaultValue>-->
+            <defaultValue>1.0.0</defaultValue>
+<!--            <defaultValue>${version}</defaultValue>-->
+        </requiredProperty>
+
+        <requiredProperty key="version">
+            <!--            <defaultValue>1.0-SNAPSHOT</defaultValue>-->
+            <defaultValue>1.0.0</defaultValue>
+<!--            <defaultValue>${version}</defaultValue>-->
         </requiredProperty>
 
     </requiredProperties>
