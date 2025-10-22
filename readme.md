@@ -87,16 +87,19 @@ Este proyecto usa el Central Publishing Plugin de Sonatype. Pasos resumidos:
     </server>
   </servers>
 
-<!--  Creo que no hace falta-->
-<!--  <profiles>-->
-<!--      <profile>-->
-<!--          <id>ossrh</id>-->
-<!--          <properties>-->
-<!--              <gpg.executable>gpg</gpg.executable>-->
-<!--              <gpg.passphrase>SU_CONTRASEÑA_GPG</gpg.passphrase>-->
-<!--          </properties>-->
-<!--      </profile>-->
-<!--  </profiles>-->
+
+  <profiles>
+      <profile>
+          <id>ossrh</id>
+          <properties>
+              <gpg.executable>gpg</gpg.executable>
+              <!-- Contrasena GPG con la que firmar los artefactos -->
+              <gpg.passphrase>SU_CONTRASEÑA_GPG</gpg.passphrase>
+          </properties>
+      </profile>
+  </profiles>
+    
+    
     
 </settings>
 ```
@@ -128,12 +131,13 @@ KEY_ID="AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555" && for server in keyserver.ubu
 ````
 
 
-4) Compila y publica (con linux)
+4) Compila y publica (con linux). Si pide contraseña es la que configuraste en ~/.m2/settings.xml en <gpg.passphrase>
 ```shell
 #mvn clean install
 #mvn central-publishing:publish
 #mvn clean install central-publishing:publish
-mvn clean install central-publishing:publish -Darchetype.jar.included
+#mvn clean install central-publishing:publish -Darchetype.jar.included
+mvn clean install central-publishing:publish
 ```
 
 5) Descargar

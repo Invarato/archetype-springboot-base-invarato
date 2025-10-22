@@ -1,11 +1,16 @@
 #!/bin/bash
 
+
 # Default values
-readonly DEFAULT_ARCHETYPE_VERSION="1.0.0"
 readonly DEFAULT_ARTIFACT_ID="projectTestForAnalysis"
-readonly ARCHETYPE_GROUP_ID="com.jarroba"
-readonly ARCHETYPE_ARTIFACT_ID="archetype-springboot-base-invarato"
 readonly M2_REPOSITORY_PATH="$HOME/.m2/repository"
+
+# Extract version from pom.xml
+POM_XML_PATH="$(dirname "$0")/pom.xml"
+ARCHETYPE_GROUP_ID=$(grep -m1 "<groupId>" "$POM_XML_PATH" | sed -E 's/.*<groupId>([^<]+)<\/groupId>.*/\1/')
+DEFAULT_ARCHETYPE_VERSION=$(grep -m1 "<version>" "$POM_XML_PATH" | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')
+ARCHETYPE_ARTIFACT_ID=$(grep -m1 "<artifactId>" "$POM_XML_PATH" | sed -E 's/.*<artifactId>([^<]+)<\/artifactId>.*/\1/')
+
 
 # Helper
 print_help() {
@@ -76,7 +81,7 @@ clean_directories "$ARCHETYPE_VERSION" "$ARTIFACT_ID" "$PARENT_DIR"
 
 # Rebuild archetype
 echo "Rebuilding archetype..."
-mvn clean install
+mvn clean install -DskipTests -Dgpg.skip=true
 
 # Generate new archetype project
 echo "Generating archetype project..."
