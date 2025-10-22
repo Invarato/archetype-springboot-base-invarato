@@ -56,7 +56,16 @@
 
 # === Configuration ===
 # Database Configuration
-readonly DB_CONFIGS=(
+#readonly DB_CONFIGS=(
+#    "CONTAINER_NAME=postgres-reference"
+#    "DB_USER=myuser"
+#    "DB_PASS=secret"
+#    "DB_NAME=postgres-reference"
+#    "DB_PORT=5433"
+#    "DB_VERSION=18.0"
+#    "REFERENCE_PORT=5432"
+#)
+DB_CONFIGS=(
     "CONTAINER_NAME=postgres-reference"
     "DB_USER=myuser"
     "DB_PASS=secret"
@@ -65,6 +74,20 @@ readonly DB_CONFIGS=(
     "DB_VERSION=18.0"
     "REFERENCE_PORT=5432"
 )
+
+# Load configuration from array - CRITICAL FUNCTION
+load_config() {
+    for config in "${DB_CONFIGS[@]}"; do
+        export "$config"
+    done
+
+    # Debug: Verify variables are loaded
+    if [[ -z "$CONTAINER_NAME" ]]; then
+        echo "[ERROR] CONTAINER_NAME is not set. Config loading failed!" >&2
+        return 1
+    fi
+}
+
 
 # === Utility Functions ===
 # Log message with timestamp and severity
@@ -121,11 +144,18 @@ run_changelog() {
     liquibase_command "generateChangeLog"
 }
 
+#run_diff() {
+#    local db_url="jdbc:postgresql://localhost:$DB_PORT/$DB_NAME"
+#    local ref_url="jdbc:postgresql://localhost:$REFERENCE_PORT/postgres"
+#
+#    liquibase_command "diff" "-Dliquibase.url=$db_url -Dliquibase.referenceUrl=$ref_url"
+#}
+
 run_diff() {
     local db_url="jdbc:postgresql://localhost:$DB_PORT/$DB_NAME"
     local ref_url="jdbc:postgresql://localhost:$REFERENCE_PORT/postgres"
-    
-    liquibase_command "diff" "-Dliquibase.url=$db_url -Dliquibase.referenceUrl=$ref_url"
+
+    liquibase_command "diff" "-Dliquibase.url=$db_url -Dliquibase.referenceUrl=$ref_url -Dliquibase.referenceUsername=$DB_USER -Dliquibase.referencePassword=$DB_PASS"
 }
 
 # Container management functions
@@ -154,6 +184,16 @@ setup_container() {
 
 # Main script execution
 main() {
+    # CRITICAL: Load configuration FIRST
+    if ! load_config; then
+        log "Failed to load configuration" "ERROR"
+        exit 1
+    fi
+
+    log "Configuration loaded successfully"
+    log "Container name: $CONTAINER_NAME"
+    log "Database port: $DB_PORT"
+
     show_menu
     
     case $choice in
