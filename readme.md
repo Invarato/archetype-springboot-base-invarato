@@ -2,8 +2,6 @@
 
 [![Maven Repository](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fjarroba%2Farchetype-springboot-base-invarato%2Fmaven-metadata.xml&style=flat-square)](https://mvnrepository.com/artifact/com.jarroba/archetype-springboot-base-invarato)
 
-[![Latest Version](https://img.shields.io/badge/Latest-1.0.1-blue?style=flat-square)](https://mvnrepository.com/artifact/com.jarroba/archetype-springboot-base-invarato)
-
 [![Maven Central](https://img.shields.io/badge/Maven%20Central-1.0.1-blue?style=flat-square)](https://central.sonatype.org/artifact/com.jarroba/archetype-springboot-base-invarato)
 
 Arquetipo de Maven para crear proyectos base de Spring Boot listos para producción, con capas de controlador/servicio/repositorio, mapeos, manejo global de excepciones, integración con Liquibase, pruebas unitarias e integración con Testcontainers y configuración Docker/Compose opcional.
@@ -147,6 +145,9 @@ mvn clean install central-publishing:publish
 ```
 
 5) Descargar
+Última versión:
+   [![Latest Version](https://img.shields.io/badge/Latest-1.0.1-blue?style=flat-square)](https://mvnrepository.com/artifact/com.jarroba/archetype-springboot-base-invarato)
+
 Con comando
 ````shell
 mvn archetype:generate \
