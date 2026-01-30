@@ -7,7 +7,7 @@ Proyecto generado con el arquetipo base de Spring Boot.
 - Versión: ${version}
 
 #[[##]]# Requisitos mínimos
-- JDK 21
+- JDK 25
 - Maven 3.6.3+
 - Docker 27+ (opcional, para base de datos y/o Testcontainers)
 

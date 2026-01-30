@@ -2,7 +2,6 @@ package ${groupId}.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -21,7 +20,7 @@ import java.util.Optional;
  */
 @ControllerAdvice
 @Slf4j
-public class GlobalExceptionHandlerController implements ErrorController {
+public class GlobalExceptionHandlerController {
 
     /**
      * Creates a standardized error response with additional context.
@@ -68,23 +67,23 @@ public class GlobalExceptionHandlerController implements ErrorController {
     /**
      * Handles generic errors from servlet context.
      */
-    @GetMapping("/error")
-    public ResponseEntity<ErrorResponse> handleError(HttpServletRequest request) {
-        Throwable throwable = (Throwable) request.getAttribute("jakarta.servlet.error.exception");
-        
-        Exception exception = throwable instanceof Exception ex 
-            ? ex 
-            : new Exception("Unexpected server error occurred", throwable);
-        
-        return createResponseEntityError(
-            "Internal Server Error",
-            exception,
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            Optional.ofNullable(exception.getMessage())
-                .orElse("Unexpected error occurred."),
-            request
-        );
-    }
+//    @GetMapping("/error")
+//    public ResponseEntity<ErrorResponse> handleError(HttpServletRequest request) {
+//        Throwable throwable = (Throwable) request.getAttribute("jakarta.servlet.error.exception");
+//
+//        Exception exception = throwable instanceof Exception ex
+//            ? ex
+//            : new Exception("Unexpected server error occurred", throwable);
+//
+//        return createResponseEntityError(
+//            "Internal Server Error",
+//            exception,
+//            HttpStatus.INTERNAL_SERVER_ERROR,
+//            Optional.ofNullable(exception.getMessage())
+//                .orElse("Unexpected error occurred."),
+//            request
+//        );
+//    }
 
     /**
      * Catch-all handler for unhandled exceptions.
