@@ -1,0 +1,267 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+
+metadata:
+  name: ${artifactId}
+
+# Build configuration
+build:
+  artifacts:
+    - image: ${artifactId}
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          APP_VERSION: "{{.VERSION}}"
+      sync:
+        manual:
+          - src: "src/**/*.java"
+            dest: /app/src
+          - src: "src/**/*.properties"
+            dest: /app/src
+          - src: "src/**/*.yml"
+            dest: /app/src
+          - src: "src/**/*.yaml"
+            dest: /app/src
+  tagPolicy:
+    gitCommit:
+      variant: AbbrevCommitSha
+  local:
+    push: false
+    useBuildkit: true
+    concurrency: 0
+
+# Deploy configuration for Kubernetes
+deploy:
+  kubectl:
+    manifests:
+      - k8s/deployment.yaml
+      - k8s/service.yaml
+      - k8s/configmap.yaml
+    flags:
+      apply:
+        - --force
+      delete:
+        - --grace-period=5
+  statusCheckDeadlineSeconds: 300
+
+# Port forwarding for local development
+portForward:
+  - resourceType: service
+    resourceName: ${artifactId}
+    namespace: default
+    port: 8080
+    localPort: 8080
+  - resourceType: service
+    resourceName: postgres
+    namespace: default
+    port: 5432
+    localPort: 5432
+  - resourceType: service
+    resourceName: redis
+    namespace: default
+    port: 6379
+    localPort: 6379
+
+# Profiles for different environments
+profiles:
+  # Development profile with hot reload
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+        - image: ${artifactId}
+          docker:
+            dockerfile: Dockerfile
+            buildArgs:
+              APP_VERSION: "dev-{{.VERSION}}"
+          sync:
+            auto: true
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/dev/*.yaml
+    portForward:
+      - resourceType: service
+        resourceName: ${artifactId}
+        namespace: default
+        port: 8080
+        localPort: 8080
+
+  # Local development with compose
+  - name: local
+    activation:
+      - command: run
+        env: SKAFFOLD_PROFILE=local
+    build:
+      artifacts:
+        - image: ${artifactId}
+          docker:
+            dockerfile: Dockerfile
+            buildArgs:
+              APP_VERSION: "local-{{.VERSION}}"
+      local:
+        push: false
+    deploy:
+      docker:
+        useCompose: true
+        images:
+          - ${artifactId}
+
+  # Testing profile
+  - name: test
+    build:
+      artifacts:
+        - image: ${artifactId}
+          docker:
+            dockerfile: Dockerfile
+            buildArgs:
+              APP_VERSION: "test-{{.VERSION}}"
+            target: build
+      tagPolicy:
+        sha256: {}
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/test/*.yaml
+    test:
+      - image: ${artifactId}
+        custom:
+          - command: ./mvnw
+            args: ["test"]
+          - command: ./mvnw
+            args: ["verify"]
+
+  # Staging environment
+  - name: staging
+    build:
+      artifacts:
+        - image: ${artifactId}
+          docker:
+            dockerfile: Dockerfile
+            buildArgs:
+              APP_VERSION: "{{.VERSION}}"
+      tagPolicy:
+        gitCommit:
+          variant: Tags
+      local:
+        push: true
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/staging/*.yaml
+        defaultNamespace: staging
+      helm:
+        releases:
+          - name: ${artifactId}-staging
+            chartPath: helm/${artifactId}
+            namespace: staging
+            setValues:
+              image.tag: "{{.IMAGE_TAG}}"
+              replicaCount: 2
+              resources.limits.cpu: "1000m"
+              resources.limits.memory: "1Gi"
+
+  # Production environment
+  - name: prod
+    build:
+      artifacts:
+        - image: ${artifactId}
+          docker:
+            dockerfile: Dockerfile
+            buildArgs:
+              APP_VERSION: "{{.VERSION}}"
+      tagPolicy:
+        gitCommit:
+          variant: Tags
+      local:
+        push: true
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/prod/*.yaml
+        defaultNamespace: production
+      helm:
+        releases:
+          - name: ${artifactId}
+            chartPath: helm/${artifactId}
+            namespace: production
+            setValues:
+              image.tag: "{{.IMAGE_TAG}}"
+              replicaCount: 3
+              resources.limits.cpu: "2000m"
+              resources.limits.memory: "2Gi"
+              autoscaling.enabled: true
+              autoscaling.minReplicas: 3
+              autoscaling.maxReplicas: 10
+    verify:
+      - name: smoke-test
+        container:
+          name: smoke-test
+          image: curlimages/curl
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              sleep 30
+              curl -f http://${artifactId}.production.svc.cluster.local:8080/actuator/health || exit 1
+
+  # Debug profile with remote debugging enabled
+  - name: debug
+    activation:
+      - command: debug
+    build:
+      artifacts:
+        - image: ${artifactId}
+          docker:
+            dockerfile: Dockerfile
+            buildArgs:
+              APP_VERSION: "debug-{{.VERSION}}"
+    patches:
+      - op: add
+        path: /build/artifacts/0/docker/buildArgs/JAVA_OPTS
+        value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    deploy:
+      kubectl:
+        manifests:
+          - k8s/deployment.yaml
+          - k8s/service.yaml
+    portForward:
+      - resourceType: service
+        resourceName: ${artifactId}
+        port: 8080
+        localPort: 8080
+      - resourceType: deployment
+        resourceName: ${artifactId}
+        port: 5005
+        localPort: 5005
+
+# Custom verifications
+verify:
+  - name: health-check
+    container:
+      name: health-check
+      image: curlimages/curl
+      command: ["/bin/sh"]
+      args:
+        - -c
+        - |
+          echo "Waiting for service to be ready..."
+          sleep 10
+          curl -f http://${artifactId}:8080/actuator/health/readiness || exit 1
+          curl -f http://${artifactId}:8080/actuator/health/liveness || exit 1
+          echo "Health check passed!"
+
+# Render configuration for templating
+render:
+  rawYaml: {}
+
+# Resource selectors
+resourceSelector:
+  allow:
+    - groupKind: Deployment.apps
+      image: [".*"]
+    - groupKind: Service.v1
+      image: [".*"]
+    - groupKind: ConfigMap.v1
+    - groupKind: Secret.v1

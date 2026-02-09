@@ -1,7 +1,4 @@
 # Docker compose que se levanta automáticamente mediante Spring Boot con la aplicación y se usa para tests
-version: '3.8'
-
-
 services:
 
   db-app-postgres:

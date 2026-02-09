@@ -45,6 +45,8 @@
             <excludes>
                 <exclude>**/*.properties</exclude>
                 <exclude>**/.gitkeep</exclude>
+                <exclude>**/*.yaml</exclude>
+                <exclude>**/*.yml</exclude>
             </excludes>
         </fileSet>
 
@@ -52,6 +54,8 @@
             <directory>src/main/resources</directory>
             <includes>
                 <include>**/*.properties</include>
+                <include>**/*.yaml</include>
+                <include>**/*.yml</include>
             </includes>
         </fileSet>
 
@@ -63,6 +67,8 @@
             <directory>src/test/resources</directory>
             <includes>
                 <include>**/*.properties</include>
+                <include>**/*.yaml</include>
+                <include>**/*.yml</include>
             </includes>
         </fileSet>
 
@@ -84,6 +90,55 @@
             <includes>
                 <include>compose-app.yml</include>
                 <include>readme.md</include>
+                <include>Makefile</include>
+                <include>skaffold.yaml</include>
+                <include>MAKEFILE.md</include>
+                <include>SKAFFOLD.md</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>k8s</directory>
+            <includes>
+                <include>deployment.yaml</include>
+                <include>service.yaml</include>
+                <include>configmap.yaml</include>
+                <include>secret.yaml</include>
+                <include>ingress.yaml</include>
+                <include>postgres-deployment.yaml</include>
+                <include>redis-deployment.yaml</include>
+                <include>README.md</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>k8s/dev</directory>
+            <includes>
+                <include>kustomization.yaml</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>k8s/test</directory>
+            <includes>
+                <include>kustomization.yaml</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>k8s/staging</directory>
+            <includes>
+                <include>kustomization.yaml</include>
+                <include>hpa.yaml</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>k8s/prod</directory>
+            <includes>
+                <include>kustomization.yaml</include>
+                <include>hpa.yaml</include>
+                <include>pdb.yaml</include>
             </includes>
         </fileSet>
 
