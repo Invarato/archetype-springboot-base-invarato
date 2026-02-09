@@ -1,43 +1,78 @@
 #
-# APP_VERSION  - la versión de la aplicación (se inyecta como variable de la aplicación y del sistema).
+# APP_VERSION  - versión de la aplicación (se inyecta desde el build y se usa para:
+#                - fijar el -Drevision de Maven (versionado del artefacto)
+#                - etiquetar la imagen (labels OCI)
+#                - exponerla como variable de entorno dentro del contenedor)
 #
-# Ejemplo build:
-#   > docker build --build-arg APP_VERSION=1.0 -t mi-imagen-name:1.0 .
+# Ejemplo (build):
+#   docker build --build-arg APP_VERSION=1.0.0 -t primer-springboot-azure:1.0.0 .
+#
+# Ejemplo (run local):
+#   docker run --rm -p 8080:8080 primer-springboot-azure:1.0.0
+#
+# (Opcional) Metadatos CI/CD:
+#   - VCS_REF: commit SHA
+#   - BUILD_DATE: timestamp ISO-8601
+#   - SOURCE_URL: URL del repositorio
 
-# Args
-ARG APP_VERSION=unknown
+ARG APP_VERSION=0.0.0
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+ARG SOURCE_URL=unknown
 
-FROM maven:4.0.0-rc-4-eclipse-temurin-25 AS build
-
-
+FROM maven:3.9.12-eclipse-temurin-25 AS build
 ARG APP_VERSION
 
-WORKDIR /app
-COPY pom.xml .
+WORKDIR /workspace
 
-RUN mvn dependency:go-offline
+COPY pom.xml ./
 
-COPY src/ /app/src
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -Drevision="${APP_VERSION}" -DskipTests dependency:go-offline
 
-RUN mvn versions:set -DnewVersion="${APP_VERSION}" && mvn package -DskipTests -Dspring.profiles.active=build
+COPY src ./src
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -Drevision="${APP_VERSION}" -DskipTests clean package
 
 
 # Build App
-FROM eclipse-temurin:25-jdk
+FROM eclipse-temurin:25-jre
 
-LABEL maintainer="Ramon Invarato"
-LABEL version="1.0"
-LABEL description="Docker Image for Spring Boot"
 
-ARG APP_VERSION
-ENV APP_VERSION ${APP_VERSION}
+ARG APP_VERSION=0.0.0
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+ARG SOURCE_URL=unknown
+
+# Labels OCI
+LABEL org.opencontainers.image.title="${artifactId}" \
+      org.opencontainers.image.description="Spring Boot microservice" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.source="${SOURCE_URL}"
+
+ENV APP_VERSION="${APP_VERSION}" \
+    PORT="8080" \
+    JAVA_TOOL_OPTIONS=""
+
+WORKDIR /app
+
+# Instalar curl en imagenes Debian/Ubuntu
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
+# Usuario no-root
+RUN useradd -r -u 10001 appuser
+USER appuser
+
+COPY --from=build /workspace/target/*.jar /app/app.jar
 
 EXPOSE 8080
-WORKDIR /usr/src/app
 
-COPY --from=build /app/target/*.jar app.jar
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${PORT}/actuator/health" || exit 1
 
-RUN yum -y install curl
-HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:8080/actuator/health || exit 1
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java","-jar","/app/app.jar"]

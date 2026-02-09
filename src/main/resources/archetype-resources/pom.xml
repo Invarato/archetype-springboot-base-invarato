@@ -10,13 +10,17 @@
     </parent>
 
     <description>descripcion archetype-springboot-base-invarato</description>
-    <version>${versionStart}</version>  <!--  La version se establece automaticamente desde el build, esta de aqui solo es para el arquetipo  -->
+<!--    <version>${versionStart}</version>  &lt;!&ndash;  La version se establece automaticamente desde el build, esta de aqui solo es para el arquetipo  &ndash;&gt;-->
+    <version>${revision}</version>
 
     <groupId>${groupId}</groupId>
     <artifactId>${artifactId}</artifactId>
     <name>${artifactId}</name>
 
     <properties>
+        <!-- valor por defecto para builds locales/contenerizados si no pasas -Drevision. La version en produccion se establece automaticamente desde el build -->
+        <revision>0.0.0-SNAPSHOT</revision>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>25</java.version>

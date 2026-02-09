@@ -76,7 +76,7 @@
             <directory></directory>
             <includes>
                 <include>compose.yml</include>
-                <include>Dockerfile</include>
+<!--                <include>Dockerfile</include>-->
                 <include>mvnw</include>
                 <include>mvnw.cmd</include>
                 <include>.gitignore</include>
@@ -91,6 +91,7 @@
                 <include>compose-app.yml</include>
                 <include>readme.md</include>
                 <include>Makefile</include>
+                <include>Dockerfile</include>
                 <include>skaffold.yaml</include>
                 <include>MAKEFILE.md</include>
                 <include>SKAFFOLD.md</include>
