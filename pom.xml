@@ -1,0 +1,112 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.jarroba</groupId>
+    <artifactId>archetype-springboot-base-invarato</artifactId>
+    <version>1.0.2</version>
+    <packaging>maven-archetype</packaging>
+
+
+    <name>Archetype SpringBoot Base Invarato</name>
+    <description>Base archetype for SpringBoot projects with standard configurations</description>
+    <url>https://github.com/Invarato/archetype-springboot-base-invarato</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Ramon Invarato</name>
+            <email>r.invarato@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/Invarato/archetype-springboot-base-invarato.git</connection>
+        <developerConnection>scm:git:https://github.com/Invarato/archetype-springboot-base-invarato.git</developerConnection>
+        <url>https://github.com/Invarato/archetype-springboot-base-invarato</url>
+        <tag>HEAD</tag>
+    </scm>
+
+
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.archetype</groupId>
+                <artifactId>archetype-packaging</artifactId>
+                <version>3.2.1</version>
+            </extension>
+        </extensions>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-archetype-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                     <!-- Required so that .gitignore gets included in archetypes -->
+                    <useDefaultExcludes>false</useDefaultExcludes>
+<!--                    <archetypeVersion>${project.version}</archetypeVersion>-->
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+<!--                <version>3.3.0</version>-->
+                <version>3.4.2</version>
+                <configuration>
+                    <classifier>archetype</classifier>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.9.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <gpgArguments>
+                        <arg>--pinentry-mode</arg>
+                        <arg>loopback</arg>
+                    </gpgArguments>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+
+    </build>
+
+</project>

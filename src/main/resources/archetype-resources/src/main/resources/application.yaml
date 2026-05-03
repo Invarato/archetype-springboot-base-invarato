@@ -1,0 +1,99 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ${artifactId}
+  profiles:
+    active: dev
+  main:
+    lazy-initialization: true
+  threads:
+    virtual:
+      enable: true
+
+  # === DEVELOPMENT TOOLS ===
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      enabled: false
+    add-properties: true
+
+  # === DATABASE & ORM ===
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  liquibase:
+    enabled: false
+
+  # === DOCKER COMPOSE ===
+  docker:
+    compose:
+      enabled: true
+      file: compose-app.yml
+      start:
+        skip: never
+
+  # === CACHING & REDIS ===
+  cache:
+    type: redis
+    redis:
+      time-to-live: 24h
+      key-prefix: '${spring.application.name}:${spring.profiles.active}'
+      use-key-prefix: true
+      cache-null-values: true
+      enable-statistics: true
+  data:
+    redis:
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 10
+          min-idle: 1
+
+# === MONITORING & ACTUATORS ===
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    env:
+      show-values: always
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  info:
+    git:
+      mode: full
+
+# === LOGGING ===
+logging:
+  level:
+    org.springframework.cloud.consul: DEBUG
+    org.springframework.cloud.consul.config: DEBUG
+    org.springframework.cloud.vault: DEBUG
+    org.springframework.vault: DEBUG
+    org.springframework.security: DEBUG
+#  pattern:
+#    console: '#[[%clr(%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX}){faint}  %clr(%-5level) %clr(${HOSTNAME}){blue} %clr(${PID}){magenta} %clr(---){faint} %clr(${spring.application.name:-}]){faint} %clr([%15.15t]){faint} %clr(:){faint} %clr(%m){%level}%highlight(%wex){ERROR}%n]]#'
+
+# === API DOCUMENTATION ===
+springdoc:
+  swagger-ui:
+    path: /docs

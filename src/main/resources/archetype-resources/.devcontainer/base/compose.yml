@@ -1,0 +1,10 @@
+services:
+
+  app:
+    image: mcr.microsoft.com/devcontainers/java:25-bookworm
+    volumes:
+      - ../..:/workspace/${localWorkspaceFolderBasename}:cached
+    network_mode: bridge
+
+volumes:
+  db_data:
