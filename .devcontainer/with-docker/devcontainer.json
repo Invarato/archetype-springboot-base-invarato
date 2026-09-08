@@ -1,0 +1,136 @@
+{
+  // ═══ PERFIL with-docker: Docker-in-Docker (PRIVILEGIADO) — tu sesion, no la de los agentes ═══
+  //
+  // Para lo que el perfil hardened no puede hacer: correr los tests del proyecto generado con
+  // Testcontainers, levantar su `compose-app.yml` (Postgres/Redis) y firmar una release con GPG.
+  //
+  // ⚠️ ESTE PERFIL NO CONTIENE A NADIE. Docker-in-Docker exige `privileged`, y un contenedor
+  // privilegiado se sale al host (aqui, tu VM de WSL con todo tu $HOME) sin esfuerzo. El firewall
+  // sigue puesto y es util contra un despiste, pero desde dentro se puede desmontar. Si vas a
+  // dejar agentes trabajando solos, usa el perfil por defecto (.devcontainer/devcontainer.json).
+  //
+  // Formato JSONC: los comentarios son validos.
+  "name": "archetype-invarato · con Docker (privilegiado)",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": "..",
+    "args": {
+      "TZ": "${localEnv:TZ:Europe/Madrid}",
+      // Sudo completo: en un contenedor privilegiado, restringirlo es teatro (se es root igual) y
+      // solo estorba cuando necesitas instalar algo a mano.
+      "RESTRICT_SUDO": "false"
+    }
+  },
+  "remoteUser": "vscode",
+
+  // Mismo montaje que el otro perfil: el repo un nivel por debajo de /workspace, porque
+  // `make generate` escribe el proyecto generado en el directorio PADRE del repo.
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  "workspaceFolder": "/workspace/${localWorkspaceFolderBasename}",
+
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25",
+      "jdkDistro": "tem",
+      "installMaven": "true",
+      "mavenVersion": "latest"
+    },
+
+    // Docker DENTRO del contenedor (no el del host) a proposito: el proyecto generado vive solo
+    // aqui dentro, y es el que levanta compose y corre Testcontainers. Con docker-outside-of-docker
+    // esos contenedores efimeros se irian al Docker del host y acabarian mezclados con los de
+    // trabajo real — y ademas el socket del host es root en el host.
+    // La feature pone `privileged` por su cuenta: no hay forma de tener esto sin ello.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": { "moby": false },
+
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "mounts": [
+    // Mismos volumenes que el perfil hardened (nombres fijos, no `${devcontainerId}`, justo para
+    // esto): al cambiar de perfil no pierdes ni la cache de Maven, ni la sesion de Claude, ni los
+    // worktrees a medias, ni el historial.
+    "source=archetype-invarato-m2,target=/home/vscode/.m2,type=volume",
+    "source=archetype-invarato-claude,target=/home/vscode/.claude,type=volume",
+    "source=archetype-invarato-worktrees,target=/home/vscode/worktrees,type=volume",
+    "source=archetype-invarato-gh,target=/home/vscode/.config/gh,type=volume",
+
+    "source=archetype-invarato-history,target=/home/vscode/.commandhistory,type=volume",
+
+    // ── Y lo que solo vive en TU sesion ───────────────────────────────────────────────────
+    // La clave GPG con la que se firman los artefactos para Maven Central. Solo aqui: firmar una
+    // release es un acto tuyo y deliberado, no algo que deba poder hacer un agente. Volumen propio
+    // y NO un bind de tu ~/.gnupg del host: importa aqui SOLO la clave de este proyecto en vez de
+    // exponer tu llavero entero.
+    "source=archetype-invarato-gnupg,target=/home/vscode/.gnupg,type=volume",
+
+    // Claves SSH (acceso a servidores, remotes por ssh). Mismo criterio que la GPG. El remote de
+    // este repo es HTTPS, asi que para el trabajo normal no hace falta.
+    // ⚠️ Y OJO AL ORDEN, que es al reves de lo que parece: primero RECONSTRUYE y despues pega la
+    // clave. El volumen nace vacio y se monta ENCIMA; si reconstruyes con la clave ya puesta, el
+    // montaje la tapa y la pierdes. Despues: chmod 600 sobre la clave, o ssh la ignora en silencio.
+    "source=archetype-invarato-ssh,target=/home/vscode/.ssh,type=volume",
+
+    // La sesion de `docker login`. Sin esto, cada rebuild vuelve a tirar de Docker Hub como
+    // anonimo — y ahi es donde te encuentras el "toomanyrequests" a mitad de un `make test`, que no
+    // parece un problema de credenciales. Tambien guarda el estado de buildx.
+    "source=archetype-invarato-docker,target=/home/vscode/.docker,type=volume"
+  ],
+
+  "containerEnv": {
+    "DOCKER_BUILDKIT": "1",
+    // Claude: desagregado (corta telemetria pero DEJA los auto-updates; issue #53899).
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_FEEDBACK_COMMAND": "1",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
+    "DEVCONTAINER": "true"
+  },
+
+  // Puertos del PROYECTO GENERADO cuando lo arrancas aqui dentro para comprobar que el arquetipo
+  // produce algo que funciona. 8080 = API Spring · 5005 = debug JVM · 5432 = Postgres · 6379 = Redis
+  // (los dos ultimos, los del compose-app.yml del proyecto generado).
+  "forwardPorts": [8080, 5005, 5432, 6379],
+  "portsAttributes": {
+    "8080": { "label": "Spring API (proyecto generado)", "onAutoForward": "notify" },
+    "5005": { "label": "JVM debug", "onAutoForward": "silent" },
+    "5432": { "label": "Postgres", "onAutoForward": "silent" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        "redhat.vscode-xml",
+        "ms-vscode.makefile-tools",
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.import.exclusions": [
+          "**/src/main/resources/archetype-resources/**",
+          "**/target/**"
+        ],
+        "files.exclude": { "**/target": true },
+        "editor.formatOnSave": true
+      }
+    },
+    "jetbrains": {
+      "backend": "IntelliJ",
+      "settings": {
+        "Git4Idea:app:Git-Application-Settings.use_credential_helper": true
+      }
+    }
+  },
+
+  "postCreateCommand": "java -version; mvn -version; docker version; mvn -B -q -Dgpg.skip=true dependency:resolve-plugins || true",
+
+  // El firewall tambien aqui: no contiene a un agente hostil (privilegiado), pero si evita que un
+  // build o un test se traigan cosas de sitios que no toca. Se ejecuta DESPUES de que dockerd haya
+  // arrancado y por eso el script no hace `iptables -F`: eso dejaria a los contenedores de dentro
+  // sin red. Escribe en DOCKER-USER, que es la cadena que dockerd reserva para esto.
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "waitFor": "postStartCommand"
+}
