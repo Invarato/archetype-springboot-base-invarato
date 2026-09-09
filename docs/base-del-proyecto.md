@@ -249,6 +249,15 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
 - [x] **Unificar la configuración** (G9). ✅ 2026-09-09. Un solo `application.yaml` por fuente. De paso:
       `spring.threads.virtual.enabled` (era `enable`, G10), fuera `spring.main.lazy-initialization`, y el
       starter de Redis que faltaba aunque la configuración ya declaraba `spring.cache.type=redis` (G11).
+- [x] **Demostrar el oráculo del esquema.** ✅ 2026-09-09, tras darle Docker al devcontainer (D5).
+      `make verify` sobre el proyecto generado: **12 tests unitarios + 12 de integración en verde**, con
+      evidencia en el log de que el ciclo completo funciona y no solo compila:
+      · `Migrating schema "public" to version "1 - init"` → Flyway aplica el `V1__init.sql` desde vacío;
+      · `Successfully applied 1 migration`, y los contextos siguientes ven `Current version: 1`;
+      · **cero errores de validación** con `ddl-auto: validate` → las entidades cuadran con el esquema que
+        construyó Flyway. Eso es exactamente el detector de deriva de D2, funcionando.
+      · Ryuk arrancó sin el `Could not connect` de G5 y no dejó contenedores huérfanos.
+      Hasta aquí, todo lo que se decidió está ejercitado, no solo escrito.
 - [ ] **Modernizar versiones**: Boot 4.0.2 → 4.1.1 y el resto de la tabla del onboarding. Incluye subir el
       Maven wrapper (hoy 3.2.0) y los plugins del arquetipo (archetype 3.2.1 → 3.4.1, gpg, central-publishing).
 - [ ] **CI.** No existe `.github/`. El ciclo `generate → compile → verify` con Testcontainers tiene que
