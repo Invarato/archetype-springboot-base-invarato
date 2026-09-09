@@ -8,10 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -39,7 +40,7 @@ public abstract class BaseControllerIT extends ConfigTestContainersTest {
      */
     protected String postCreate(String urlTemplatePost, Object bodyDtoPost) throws Exception {
         MvcResult result = mockMvc.perform(post(urlTemplatePost)
-                        .with(SecurityMockMvcRequestPostProcessors.csrf()) // Ensure CSRF is enabled in integration
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(UtilsTest.toJson(bodyDtoPost))) // UtilsTest converts objects to JSON
                 .andExpect(status().isCreated()) // Check that it was created correctly

@@ -39,12 +39,18 @@ spring:
     locations: classpath:db/migration
 
   # === DOCKER COMPOSE ===
+  # Desactivado a proposito. El soporte de compose de Spring Boot arranca los contenedores y ademas
+  # inyecta los datos de conexion, pero aqui sobraba y estorbaba:
+  #   - `make run` ya levanta compose-app.yml (`make docker-up`), asi que habia DOS mecanismos haciendo
+  #     lo mismo, y dos mecanismos para una cosa es como acaban desincronizados.
+  #   - `spring.docker.compose.file` es una ruta RELATIVA al directorio de trabajo, y como la app se
+  #     arranca con `mvn -pl app`, el proceso corre desde app/ y no encontraba el fichero. El sintoma
+  #     era la aplicacion quejandose de que no hay DataSource, que no apunta a esto por ningun lado.
+  # La conexion se declara explicitamente en el perfil dev: predecible y sin depender del directorio
+  # desde el que arranques.
   docker:
     compose:
-      enabled: true
-      file: compose-app.yml
-      start:
-        skip: never
+      enabled: false
 
   # === CACHE / REDIS ===
   cache:
@@ -91,9 +97,77 @@ logging:
     ${groupId}: DEBUG
 
 # === DOCUMENTACION DE LA API ===
+# APAGADA por defecto y encendida solo en dev (ver el documento del perfil, mas abajo). En produccion
+# regalaria el mapa completo de la API sin que nadie lo pida; el contrato ya viaja en el modulo contract.
+# Las rutas estan permitidas en SecurityConfig: son las dos mitades de la misma decision.
 springdoc:
+  api-docs:
+    enabled: false
   swagger-ui:
+    enabled: false
     path: /docs
+
+# === APLICACION ===
+app:
+  cors:
+    # Quien puede llamar a esta API desde un navegador. Vacio = nadie, que es el defecto correcto:
+    # que haya que declararlo, en vez de abrirlo y confiar en acordarse de cerrarlo.
+    # No se admite '*': con credenciales el navegador lo rechaza de todas formas.
+    #
+    # ⚠️ El #[[...]]# NO es ruido. Este fichero pasa por Velocity al generarse, y una referencia con
+    # valor por defecto (dolar, llave, VARIABLE, dos puntos, defecto) Velocity la intenta resolver y
+    # revienta la generacion entera. Escapada, llega literal y la resuelve Spring al arrancar, que es
+    # justo lo que se busca. (Este comentario tampoco puede escribir el ejemplo sin escapar: Velocity
+    # tambien parsea los comentarios.)
+    allowed-origins: #[[${CORS_ALLOWED_ORIGINS:}]]#
+
+# === SEGURIDAD ===
+# La cadena de filtros esta SIEMPRE activa (configs/SecurityConfig) y es la misma en todos los entornos.
+# Lo unico que cambia por entorno es el emisor de los tokens:
+#   - dev/test  -> secreto local HS256 (ver el documento del perfil dev y configs/DevJwtConfig)
+#   - los demas -> este issuer-uri, el emisor de verdad con sus claves publicas
+spring.security.oauth2.resourceserver.jwt.issuer-uri: #[[${OAUTH2_ISSUER_URI:}]]#
+
+---
+# ═══════════════════════════════════════════════════════════════════════════════════════════════
+# PERFIL dev — comodidad en local SIN bajar la guardia.
+#
+# Fijate en lo que NO hay aqui: ni una sola regla de seguridad. Las reglas son las mismas que en
+# produccion. Lo unico que cambia es de donde salen los tokens, para no necesitar un servidor de
+# identidad levantado solo para poder trabajar. Ver configs/DevJwtConfig.
+# ═══════════════════════════════════════════════════════════════════════════════════════════════
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  # Los servicios que levanta `make docker-up` (compose-app.yml), en sus puertos publicados. Explicito y
+  # no por descubrimiento: funciona igual lo arranques desde el IDE, desde make o a mano.
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: myuser
+    password: secret
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+app:
+  cors:
+    # El front en local. Anade aqui el puerto que uses.
+    allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173
+  dev:
+    # ⚠️ Secreto DE MENTIRA, y esta en el repositorio a proposito: no protege nada, solo permite firmar
+    # tokens en local. Si esto aparece en la configuracion de un entorno real, es un error grave.
+    # `make token` acuña un token valido con el.
+    jwt-secret: dev-only-secret-no-usar-fuera-de-local-min-32-bytes
+
+# En dev si interesa tener la documentacion navegable: http://localhost:8080/docs
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 
 ---
 # ═══════════════════════════════════════════════════════════════════════════════════════════════

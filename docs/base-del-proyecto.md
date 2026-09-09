@@ -154,6 +154,37 @@ trae Temurin 25 precisamente para que el arquetipo se pruebe con el mismo JDK qu
 **Qué la reabriría.** La salida de **Java 29 LTS** (sept. 2027). Para experimentar con un no-LTS antes, que
 sea en un servicio concreto cambiando `<java.version>`, no en el arquetipo.
 
+### D7 · Seguridad: una sola cadena, siempre activa (2026-09-09)
+
+**Decisión.** Una única `SecurityFilterChain` en el proyecto, **activa en todos los entornos y también en
+los tests**. Stateless, con **OAuth2 Resource Server (JWT)** — nada de filtros JWT escritos a mano.
+
+**La idea que lo ordena todo: lo que cambia entre entornos no son las reglas, es de dónde salen los
+tokens.** En `dev` y `test`, un decodificador local con secreto HS256 (`configs/DevJwtConfig`) y
+`make token` para acuñar uno; en el resto, el emisor de verdad vía `issuer-uri`. La cadena es idéntica en
+los dos sitios.
+
+**Por qué, y qué se descarta.** El patrón habitual —un perfil que apaga la seguridad para poder
+trabajar— tiene un coste que no se ve hasta que duele: si en local no hay seguridad, **los fallos de
+autorización se descubren en el primer despliegue**. Y si los tests la desactivan, no están probando la
+aplicación que se despliega. Por eso aquí no hay perfil `nosecurity` ni `SecurityDisableForTestConfig`:
+los tests se autentican como un cliente real, con `.with(jwt())`.
+
+**CSRF desactivado, pero por el motivo correcto y escrito en el código:** la credencial viaja en la
+cabecera `Authorization` y el navegador no la adjunta sola, así que no hay vector que proteger.
+⚠️ Ese razonamiento **deja de valer** si algún día se añade autenticación por cookie de sesión,
+`httpBasic` o mTLS. El snippet `httpBasic() + csrf.disable()` que circula por todas partes es inseguro.
+
+**CORS explícito y cerrado por defecto**, porque casi todo el dolor de «no puedo llamar a la API desde el
+front en local» es CORS y no autenticación, y el error que ve el navegador no lo dice.
+
+**Verificado de verdad, contra la aplicación levantada**, no solo con tests: sin token 401; con el token
+de `make token` 200/201; con el token manipulado 401; `/actuator/health` público pero `/actuator/env` 401.
+Además `SeguridadActivaIT` deja eso mismo en el gate, **sin `@ActiveProfiles`**, para que nadie pueda
+apagar la seguridad sin que algo se ponga rojo.
+
+**Qué la reabriría.** Necesitar clientes de navegador con sesión por cookie: ahí CSRF vuelve.
+
 ---
 
 ## Tropiezos ya pagados
@@ -227,6 +258,26 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   *sobre* el arquetipo; el de `archetype-resources/.devcontainer/` es la plantilla que se copia a los
   proyectos generados. Tocar uno no cambia el otro. (Es el mismo tipo de despiste que G14, pero con los
   devcontainers.)
+- **G22 · Postgres 18 cambió el punto de montaje del volumen.** Espera **un solo** montaje en
+  `/var/lib/postgresql` (los datos van en un subdirectorio), no en `/var/lib/postgresql/data` como antes.
+  Con el punto antiguo el contenedor arranca, falla y muere — y el síntoma que ves es **la aplicación
+  quejándose de que no encuentra `DataSource`**, que no apunta a esto por ningún lado. Lo tuvimos roto y
+  no se veía porque los tests usan Testcontainers, que no monta volumen: `make verify` estaba en verde y
+  `make run` no arrancaba.
+- **G23 · `spring.docker.compose.file` es una ruta RELATIVA al directorio de trabajo.** Al pasar a
+  multi-módulo, la app se arranca con `mvn -pl app`, el proceso corre desde `app/` y dejaba de encontrar
+  el `compose-app.yml` de la raíz. Mismo síntoma engañoso que G22. Se resolvió declarando la conexión
+  explícitamente en el perfil `dev` y **desactivando** el soporte de compose: `make docker-up` ya
+  levantaba los servicios, así que había dos mecanismos para lo mismo.
+- **G24 · `@WithMockUser` NO autentica con `SessionCreationPolicy.STATELESS`.** No hay repositorio de
+  contexto de seguridad donde dejar la autenticación que prepara la anotación, así que la petición llega
+  sin credenciales y responde **401**. En los tests de una API stateless se usa `.with(jwt())`, que
+  además es lo fiel: es como se autentica un cliente de verdad. `@WithMockUser` sigue valiendo en los
+  slices `@WebMvcTest`, que usan la seguridad por defecto.
+- **G25 · Velocity también parsea los COMENTARIOS.** Una referencia con valor por defecto (dólar, llave,
+  variable, dos puntos, defecto) escrita dentro de un comentario **rompe la generación entera**. Nos pasó
+  escribiendo el comentario que explicaba justamente cómo escaparlas. Se escapan con `#[[...]]#`, estén
+  donde estén.
 - **G19 · `${spring-boot.version}` no se resuelve en el pom de un módulo hijo.** Al pasar a multi-módulo, el
   `<parent>` de `app` ya no es `spring-boot-starter-parent` sino el padre del proyecto, así que
   `${project.parent.version}` pasó a valer `${revision}`. Cuidado al mover bloques entre poms: las

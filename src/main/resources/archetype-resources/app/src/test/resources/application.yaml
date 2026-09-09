@@ -22,3 +22,15 @@ spring:
 
   cache:
     type: none
+
+# ⚠️ La seguridad NO se desactiva en los tests. Si se desactivara, los tests no estarian probando la
+# aplicacion que se despliega, y los fallos de autorizacion aparecerian por primera vez en produccion.
+# Los tests se autentican como lo haria un cliente: con un JWT (ver los post-processors `jwt(...)`).
+#
+# Este secreto solo permite que arranque el decodificador local (configs/DevJwtConfig, perfiles dev y
+# test). Los tests con MockMvc ni siquiera lo usan: `jwt()` inyecta la autenticacion ya resuelta.
+app:
+  dev:
+    jwt-secret: test-only-secret-no-usar-fuera-de-los-tests-min-32-bytes
+  cors:
+    allowed-origins: http://localhost:3000

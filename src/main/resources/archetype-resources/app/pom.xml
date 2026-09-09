@@ -61,6 +61,22 @@
         </dependency>
         <!--   Controller   -->
 
+        <!--
+          Seguridad. Va SIEMPRE activa: no hay perfil que la apague (ver configs/SecurityConfig).
+
+          `oauth2-resource-server` en vez de un filtro JWT escrito a mano: la validacion de firma,
+          emisor, audiencia y expiracion ya esta hecha y probada. Un filtro propio es codigo de
+          seguridad sin revisar, que es la peor clase de codigo propio.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
         <!-- Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

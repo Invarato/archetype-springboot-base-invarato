@@ -1,5 +1,5 @@
 .PHONY: help clean build test run run-dev run-prod stop docker-up docker-down docker-restart \
-        db-baseline db-info package install \
+        db-baseline db-info token package install \
         deps-tree deps-updates verify fmt check docker-build docker-run logs actuator-health
 
 # Colors for output
@@ -50,6 +50,9 @@ help:
 	@echo "$(YELLOW)💾 Database Commands (Flyway):$(NC)"
 	@echo "  make db-baseline      Genera V1__init.sql desde las entidades (SOLO la 1a vez)"
 	@echo "  make db-info          Estado de las migraciones (app arrancada)"
+	@echo ""
+	@echo "$(YELLOW)🔐 Seguridad:$(NC)"
+	@echo "  make token            Acuña un JWT de desarrollo (perfil dev)"
 	@echo ""
 	@echo "$(YELLOW)📦 Dependencies Commands:$(NC)"
 	@echo "  make deps-tree        Show dependency tree"
@@ -259,3 +262,27 @@ ci-package:
 # ============================================
 
 .DEFAULT_GOAL := help
+
+# ============================================
+# Seguridad
+# ============================================
+# La cadena de filtros es la MISMA en local y en produccion; lo unico que cambia es el emisor de los
+# tokens. En dev, el emisor es un secreto local (configs/DevJwtConfig), y este target acuña un token
+# firmado con el. Asi se trabaja autenticado sin levantar ningun servidor de identidad, y sin apagar la
+# seguridad — que es lo que haria que los fallos de autorizacion aparecieran por primera vez al desplegar.
+#
+# Un JWT HS256 no es mas que base64url(cabecera).base64url(cuerpo).base64url(HMAC-SHA256), asi que no
+# hace falta ninguna herramienta extra: openssl basta.
+token:
+	@secret=$$(grep -m1 -E '^[[:space:]]*jwt-secret:' app/src/main/resources/application.yaml | sed -E 's/.*jwt-secret:[[:space:]]*//'); \
+	if [ -z "$$secret" ]; then echo "$(RED)✗ no encuentro app.dev.jwt-secret en application.yaml$(NC)"; exit 1; fi; \
+	b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }; \
+	header=$$(printf '{"alg":"HS256","typ":"JWT"}' | b64); \
+	now=$$(date +%s); exp=$$((now + 3600)); \
+	payload=$$(printf '{"sub":"dev-user","scope":"read write","iat":%s,"exp":%s}' "$$now" "$$exp" | b64); \
+	sig=$$(printf '%s.%s' "$$header" "$$payload" | openssl dgst -sha256 -hmac "$$secret" -binary | b64); \
+	tok="$$header.$$payload.$$sig"; \
+	echo "$$tok"; \
+	echo ""; \
+	echo "$(YELLOW)Valido 1 hora. Uso:$(NC)"; \
+	echo "  curl -H \"Authorization: Bearer $$tok\" http://localhost:8080/api/v1/examples"

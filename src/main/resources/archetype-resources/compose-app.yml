@@ -13,7 +13,12 @@ services:
 #    ports:
 #      - '5432'
     volumes:
-      - bd_data:/var/lib/postgresql/data
+      # ⚠️ El montaje va en /var/lib/postgresql, NO en /var/lib/postgresql/data.
+      # Postgres 18 cambio la recomendacion: espera UN solo montaje en /var/lib/postgresql y coloca los
+      # datos en un subdirectorio, para que `pg_upgrade --link` no tropiece con el limite del montaje.
+      # Con el punto antiguo, el contenedor arranca, falla y muere — y el sintoma que ves es la
+      # aplicacion quejandose de que no encuentra DataSource, que no apunta a esto por ningun lado.
+      - bd_data:/var/lib/postgresql
     labels:
       org.springframework.boot.readiness-check.tcp.disable: true
 

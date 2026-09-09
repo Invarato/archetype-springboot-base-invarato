@@ -5,57 +5,40 @@ import ${groupId}.controllers.integration.common.BaseControllerIT;
 import ${groupId}.dtos.requests.MyTableRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
+/**
+ * Tests de integracion del controlador de ejemplo.
+ *
+ * <p>⚠️ Cada peticion lleva {@code .with(jwt())}, y no es ruido: la API es <b>stateless</b> y se
+ * autentica con un token, asi que los tests se autentican igual que lo hara un cliente de verdad.</p>
+ *
+ * <p>Ojo, porque despista: {@code @WithMockUser} <b>no funciona</b> aqui. Con
+ * {@code SessionCreationPolicy.STATELESS} no hay repositorio de contexto de seguridad donde dejar la
+ * autenticacion que esa anotacion prepara, asi que la peticion llega sin credenciales y responde 401.
+ * Sigue valiendo en los tests de slice ({@code @WebMvcTest}), que usan la seguridad por defecto.</p>
+ */
 class ExampleControllerIT extends BaseControllerIT {
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testSayHello() throws Exception {
-        mockMvc.perform(get("/api/v1/examples/hello"))
+        mockMvc.perform(get("/api/v1/examples/hello").with(jwt()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string("Hello World"));
     }
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testSayHelloDto() throws Exception {
-        mockMvc.perform(get("/api/v1/examples/helloDto"))
+        mockMvc.perform(get("/api/v1/examples/helloDto").with(jwt()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Hello World DTO"));
     }
-
-
-// TODO the following testCreateNew is the same as:
-//   @Autowired
-//   private MyTableRepository MyTableRepository;
-//    @Test
-//    @WithMockUser(authorities = {"ROLE_USER"})
-//    void testCreateNew() throws Exception {
-//        MyTableRequest mockDto = new MyTableRequest(
-//                "Name",
-//                "Surname", 
-//                "Description"
-//        );
-//        mockMvc.perform(post("/api/v1/examples")
-//                .with(SecurityMockMvcRequestPostProcessors.csrf())
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .content(UtilsTest.toJson(mockDto))) // UtilsTest converts objects to JSON
-//                .andDo(print())
-//                .andExpect(status().isCreated()) // Check HTTP 201 Created status
-//                .andExpect(header().exists("Location"));
-//        MyTable persistedEntity = MyTableRepository.findByName("Name").orElse(null);
-//        assertNotNull(persistedEntity);
-//        assertEquals("Description", persistedEntity.getDescription());
-//    }
 
     private Long createNewExample(String name, String surname, String description) throws Exception {
         MyTableRequest mockDto = new MyTableRequest(name, surname, description, null);
@@ -64,17 +47,12 @@ class ExampleControllerIT extends BaseControllerIT {
     }
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testCreateNewAndGetExample() throws Exception {
-        // Arrange: Insert an example in the database
-        Long generatedId = createNewExample(
-                "Name",
-                "Surname",
-                "Description"
-        );
+        // Arrange: se inserta un ejemplo
+        Long generatedId = createNewExample("Name", "Surname", "Description");
 
-        // Act & Assert: Call GET and verify response
-        mockMvc.perform(get("/api/v1/examples/{id}", generatedId))
+        // Act & Assert: se pide y se comprueba la respuesta
+        mockMvc.perform(get("/api/v1/examples/{id}", generatedId).with(jwt()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Name"))
@@ -82,54 +60,34 @@ class ExampleControllerIT extends BaseControllerIT {
                 .andExpect(jsonPath("$.description").value("Description"));
     }
 
-
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testListAllExamples() throws Exception {
-        // Arrange: Insert examples in the database
-        createNewExample(
-                "Name",
-                "Surname",
-                "Description"
-        );
-        createNewExample(
-                "Name2",
-                "Surname2",
-                "Description2"
-        );
+        createNewExample("Name", "Surname", "Description");
+        createNewExample("Name2", "Surname2", "Description2");
 
-        // Act & Assert: Call GET and verify response
-        mockMvc.perform(get("/api/v1/examples"))
+        mockMvc.perform(get("/api/v1/examples").with(jwt()))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2)) // Validate there are 2 records
-                .andExpect(jsonPath("$[0].name").value("Name")) // Verify first record content
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].name").value("Name"))
                 .andExpect(jsonPath("$[1].name").value("Name2"));
     }
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testUpdateExample() throws Exception {
-        // Arrange: Insert an example in the database
-        Long generatedId = createNewExample(
-                "Name",
-                "Surname",
-                "Description"
-        );
+        Long generatedId = createNewExample("Name", "Surname", "Description");
 
-        // Create DTO with updated data
         MyTableRequest updatedDto = new MyTableRequest("NewName", "NewSurname", "NewDescription", null);
 
-        // Act: Call PUT endpoint and verify no content returned
         mockMvc.perform(put("/api/v1/examples/" + generatedId)
-                        .with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(UtilsTest.toJson(updatedDto)))
                 .andDo(print())
-                .andExpect(status().isNoContent()); // Verify status is 204 (no content)
+                .andExpect(status().isNoContent());
 
-        // Assert: Validate data was actually updated in database
-        mockMvc.perform(get("/api/v1/examples/{id}", generatedId))
+        // Se comprueba que el cambio llego de verdad a la base de datos, no solo que respondio 204
+        mockMvc.perform(get("/api/v1/examples/{id}", generatedId).with(jwt()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("NewName"))
@@ -138,23 +96,14 @@ class ExampleControllerIT extends BaseControllerIT {
     }
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER", "ROLE_ADMIN"})
     void testDeleteExample() throws Exception {
-        // Arrange: Insert an example in the database
-        Long generatedId = createNewExample(
-                "Name",
-                "Surname",
-                "Description"
-        );
+        Long generatedId = createNewExample("Name", "Surname", "Description");
 
-        // Act: Call DELETE endpoint to remove entity
-        mockMvc.perform(delete("/api/v1/examples/" + generatedId)
-                        .with(SecurityMockMvcRequestPostProcessors.csrf()))
+        mockMvc.perform(delete("/api/v1/examples/" + generatedId).with(jwt()))
                 .andDo(print())
-                .andExpect(status().isNoContent()); // Verify status is 204
+                .andExpect(status().isNoContent());
 
-        // Assert: Validate entity was deleted
-        mockMvc.perform(get("/api/v1/examples/{id}", generatedId))
+        mockMvc.perform(get("/api/v1/examples/{id}", generatedId).with(jwt()))
                 .andDo(print())
                 .andExpect(status().isNotFound());
     }

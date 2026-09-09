@@ -9,7 +9,6 @@ import ${groupId}.services.ExampleService;
 import ${groupId}.services.integration.common.BaseServiceIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +25,6 @@ class ExampleServiceIT extends BaseServiceIT {
     private MyTableRepository MyTableRepository;
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testGetAllEjemplos() {
         MyTableRequest request = new MyTableRequest(
                 "New Example",
@@ -47,7 +45,6 @@ class ExampleServiceIT extends BaseServiceIT {
     }
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testsaveSimple() {
         // Prepare the DTO
         MyTableRequest request = new MyTableRequest(
@@ -67,7 +64,6 @@ class ExampleServiceIT extends BaseServiceIT {
     }
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER", "ROLE_ADMIN"})
     void testDeleteEjemploById() {
         // Add a record to delete
         MyTable MyTable = new MyTable();
@@ -84,7 +80,6 @@ class ExampleServiceIT extends BaseServiceIT {
     }
 
     @Test
-    @WithMockUser(authorities = {"ROLE_USER"})
     void testGetAllEjemploResponses() {
         MyTableRequest request = new MyTableRequest(
                 "New Example",
