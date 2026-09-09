@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Formato de los logs. SOLO el formato: los niveles por paquete viven en application.yaml, donde se
+  pueden cambiar por entorno con una variable sin tocar este fichero.
+
+  Dos modos, y la diferencia importa:
+    - local/dev/test → texto con colores, que es lo que lee una persona.
+    - todo lo demas  → JSON en una linea, que es lo que lee un recolector de logs.
+
+  Por que JSON fuera de local: en Kubernetes los logs salen por stdout y alguien los recoge. Si van en
+  texto plano, cada linea es una cadena opaca: no se puede filtrar por nivel, ni por servicio, ni
+  agrupar una excepcion con su traza. En JSON cada campo es un campo.
+
+  ⚠️ Este fichero NO pasa por el filtrado del arquetipo (solo se filtran .properties/.yaml/.yml), asi
+  que aqui no valen los placeholders del arquetipo. Todo lo que dependa del proyecto va por
+  springProperty, leido de application.yaml.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="app"/>
+    <springProperty scope="context" name="activeProfile" source="spring.profiles.active" defaultValue="default"/>
+
+    <!-- ── Local: legible para una persona ────────────────────────────────────────────────── -->
+    <springProfile name="default,local,dev,test,ddl-dump">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <!--
+                  traceId y spanId salen del MDC. Van aqui aunque hoy lleguen vacios: el dia que se
+                  active el tracing distribuido, la correlacion entre un log y su traza ya esta puesta
+                  y no hay que acordarse de nada.
+                -->
+                <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%-5level) %clr([${appName},%X{traceId:-},%X{spanId:-}]){faint} %clr(%logger{36}){cyan} %clr(:){faint} %msg%n%wex</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ── Resto de entornos: JSON de una linea ───────────────────────────────────────────── -->
+    <springProfile name="!default &amp; !local &amp; !dev &amp; !test &amp; !ddl-dump">
+        <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeContext>false</includeContext>
+                <!-- Campos fijos para poder filtrar por servicio y entorno en el recolector. -->
+                <customFields>{"service":"${appName}","environment":"${activeProfile}"}</customFields>
+                <!-- El MDC entero, que es donde viajan traceId/spanId y lo que anadas tu. -->
+                <provider class="net.logstash.logback.composite.loggingevent.MdcJsonProvider"/>
+                <fieldNames>
+                    <timestamp>timestamp</timestamp>
+                    <version>[ignore]</version>
+                    <levelValue>[ignore]</levelValue>
+                </fieldNames>
+                <!--
+                  Trazas de excepcion acortadas y con la CAUSA RAIZ PRIMERO. Sin esto, una excepcion
+                  envuelta cuatro veces llena la pantalla de marco y esconde justo la linea que importa
+                  — y ademas hay recolectores que truncan por longitud y se comen el final.
+                -->
+                <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                    <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                    <maxLength>2048</maxLength>
+                    <shortenedClassNameLength>20</shortenedClassNameLength>
+                    <rootCauseFirst>true</rootCauseFirst>
+                    <exclude>sun\.reflect\..*\.invoke.*</exclude>
+                </throwableConverter>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+    </springProfile>
+
+</configuration>

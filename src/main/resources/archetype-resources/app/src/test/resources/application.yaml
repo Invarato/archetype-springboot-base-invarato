@@ -11,7 +11,7 @@ spring:
   # Testcontainers via URL JDBC: levanta un Postgres efimero, distinto del de desarrollo, para no ensuciar
   # la base con la que estas trabajando.
   datasource:
-    url: jdbc:tc:postgresql:18.0:///test
+    url: jdbc:tc:postgresql:18.6:///test
 
   flyway:
     enabled: true

@@ -41,6 +41,11 @@ public class SecurityConfig {
                         // Sondas de Kubernetes: tienen que responder sin credenciales o el pod nunca
                         // se marca como vivo. Solo health e info, NO todo /actuator: el resto expone
                         // configuracion, metricas y variables de entorno.
+                        //
+                        // ⚠️ /actuator/prometheus queda AUTENTICADO. Si tu Prometheus no sabe
+                        // autenticarse, la solucion no es abrirlo aqui: es publicar actuator en un
+                        // puerto de gestion aparte (`management.server.port`) que no salga del cluster.
+                        // Abrirlo publicamente regala el mapa de trafico y errores del servicio.
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
 
                         // Documentacion de la API. Las rutas se abren aqui, pero springdoc solo esta

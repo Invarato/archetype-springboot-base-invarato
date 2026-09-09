@@ -20,7 +20,7 @@ ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
 ARG SOURCE_URL=unknown
 
-FROM maven:3.9.12-eclipse-temurin-25 AS build
+FROM maven:3.9.16-eclipse-temurin-25 AS build
 ARG APP_VERSION
 
 WORKDIR /workspace

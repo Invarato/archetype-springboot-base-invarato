@@ -70,18 +70,25 @@ spring:
           min-idle: 1
 
 # === MONITORIZACION / ACTUATOR ===
+#
+# ⚠️ Antes esto exponia TODOS los endpoints y mostraba los valores del entorno. Con `include: '*'`,
+# /actuator/env devuelve la configuracion entera —credenciales incluidas— y /actuator/heapdump un volcado
+# de memoria. Ahora la seguridad los protege, pero el defecto correcto es no exponer lo que no se usa:
+# lo que no esta publicado no se puede filtrar por error.
 management:
   endpoints:
     web:
       exposure:
-        include: '*'
+        # health e info para las sondas; prometheus para las metricas. Se amplia por variable de entorno
+        # cuando haga falta depurar, sin reconstruir la imagen.
+        include: #[[${ACTUATOR_ENDPOINTS:health,info,prometheus}]]#
   endpoint:
     health:
-      show-details: always
+      # `when-authorized` y no `always`: el detalle de salud dice a que sistemas te conectas y cuales
+      # estan caidos, que es informacion util para quien ataca.
+      show-details: #[[${HEALTH_SHOW_DETAILS:when-authorized}]]#
       probes:
         enabled: true
-    env:
-      show-values: always
   health:
     livenessState:
       enabled: true
@@ -92,9 +99,13 @@ management:
       mode: full
 
 # === LOGGING ===
+# El FORMATO esta en logback-spring.xml (texto en local, JSON en el resto). Aqui solo los NIVELES, que
+# son lo que se toca en caliente: subir el detalle de un paquete en produccion sin reconstruir nada.
 logging:
   level:
-    ${groupId}: DEBUG
+    root: #[[${LOG_LEVEL:INFO}]]#
+    ${groupId}: #[[${LOG_LEVEL_APP:DEBUG}]]#
+    org.hibernate.SQL: #[[${LOG_LEVEL_SQL:INFO}]]#
 
 # === DOCUMENTACION DE LA API ===
 # APAGADA por defecto y encendida solo en dev (ver el documento del perfil, mas abajo). En produccion
