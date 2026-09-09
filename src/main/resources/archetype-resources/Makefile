@@ -1,5 +1,5 @@
 .PHONY: help clean build test run run-dev run-prod stop docker-up docker-down docker-restart \
-        liquibase-diff liquibase-changelog liquibase-sql liquibase-update package install \
+        db-baseline db-info package install \
         deps-tree deps-updates verify fmt check docker-build docker-run logs actuator-health
 
 # Colors for output
@@ -47,11 +47,9 @@ help:
 	@echo "  make docker-run       Run application in Docker"
 	@echo "  make logs             Show Docker compose logs"
 	@echo ""
-	@echo "$(YELLOW)💾 Database/Liquibase Commands:$(NC)"
-	@echo "  make liquibase-diff      Generate diff changelog"
-	@echo "  make liquibase-changelog Generate initial changelog"
-	@echo "  make liquibase-sql       Generate migration SQL"
-	@echo "  make liquibase-update    Update database"
+	@echo "$(YELLOW)💾 Database Commands (Flyway):$(NC)"
+	@echo "  make db-baseline      Genera V1__init.sql desde las entidades (SOLO la 1a vez)"
+	@echo "  make db-info          Estado de las migraciones (app arrancada)"
 	@echo ""
 	@echo "$(YELLOW)📦 Dependencies Commands:$(NC)"
 	@echo "  make deps-tree        Show dependency tree"
@@ -81,7 +79,7 @@ help:
 
 run: docker-up
 	@echo "$(GREEN)🚀 Running application with profile: $(SPRING_PROFILE)$(NC)"
-	$(MVN) spring-boot:run -Dspring-boot.run.profiles=$(SPRING_PROFILE)
+	$(MVN) -pl app spring-boot:run -Dspring-boot.run.profiles=$(SPRING_PROFILE)
 
 run-dev:
 	@$(MAKE) run SPRING_PROFILE=dev
@@ -164,28 +162,31 @@ logs:
 	docker compose -f $(COMPOSE_FILE) logs -f
 
 # ============================================
-# Database/Liquibase Commands
+# Database Commands (Flyway)
 # ============================================
+# El esquema lo maneja Flyway. Ver docs/migraciones.md del arquetipo.
 
-liquibase-diff:
-	@echo "$(GREEN)💾 Running Liquibase diff...$(NC)"
-	@bash liquibase.bash <<< "2"
-	@echo "$(GREEN)✓ Diff completed$(NC)"
+db-baseline:
+	@echo "$(GREEN)💾 Generando V1__init.sql desde las entidades...$(NC)"
+	@if [ -f app/src/main/resources/db/migration/V1__init.sql ]; then \
+		echo "$(RED)✗ Ya existe V1__init.sql. Regenerarlo cambia su checksum y Flyway abortaria"; \
+		echo "  con 'Migration checksum mismatch' donde ya estuviera aplicada."; \
+		echo "  A partir de la primera version, las migraciones se escriben a mano (V2, V3...).$(NC)"; \
+		exit 1; \
+	fi
+	$(MVN) -pl app -am -q -DskipTests compile
+	$(MVN) -pl app spring-boot:run -Dspring-boot.run.profiles=ddl-dump
+	@echo "$(YELLOW)→ Revisa app/target/generated-schema/V1__init.sql ANTES de moverlo:$(NC)"
+	@echo "  Hibernate nombra indices y constraints como le parece y no pone comentarios."
+	@echo "$(YELLOW)→ Cuando te convenza:$(NC)"
+	@echo "  mv app/target/generated-schema/V1__init.sql app/src/main/resources/db/migration/"
 
-liquibase-changelog:
-	@echo "$(GREEN)💾 Generating Liquibase changelog...$(NC)"
-	@bash liquibase.bash <<< "1"
-	@echo "$(GREEN)✓ Changelog generated$(NC)"
-
-liquibase-sql:
-	@echo "$(GREEN)💾 Generating migration SQL...$(NC)"
-	@bash liquibase.bash <<< "3"
-	@echo "$(GREEN)✓ SQL generated in target/liquibase/migrate.sql$(NC)"
-
-liquibase-update:
-	@echo "$(GREEN)💾 Updating database...$(NC)"
-	$(MVN) liquibase:update
-	@echo "$(GREEN)✓ Database updated$(NC)"
+# No hay target para "aplicar migraciones": las aplica Spring Boot AL ARRANCAR. Un comando aparte se
+# desincroniza del arranque y acaba mintiendo. Para ver el estado, con la app levantada:
+db-info:
+	@echo "$(GREEN)💾 Estado de las migraciones (requiere la app arrancada):$(NC)"
+	@curl -fsS http://localhost:8080/actuator/flyway | jq '.contexts[].flywayBeans.flyway.migrations[] | {version, description, state}' 2>/dev/null \
+		|| echo "$(RED)✗ No responde. ¿Esta la app arrancada? (make run)$(NC)"
 
 # ============================================
 # Dependencies Commands

@@ -2,7 +2,7 @@
 
 Este directorio contiene los manifiestos de Kubernetes para desplegar la aplicación Spring Boot en diferentes entornos.
 
-## Estructura
+#[[##]]# Estructura
 
 ```
 k8s/
@@ -27,48 +27,48 @@ k8s/
     └── pdb.yaml
 ```
 
-## Recursos Base
+#[[##]]# Recursos Base
 
-### deployment.yaml
+#[[###]]# deployment.yaml
 - **Replicas**: 1 (ajustable por entorno)
 - **Recursos**: 512Mi RAM / 250m CPU (requests)
 - **Probes**: Liveness, Readiness y Startup configuradas
 - **Variables de entorno**: Configuración de Spring Boot
 - **Volúmenes**: ConfigMap montado en /config
 
-### service.yaml
+#[[###]]# service.yaml
 - **Tipo**: ClusterIP
 - **Puerto**: 8080
 - **Selector**: app=${artifactId}
 
-### configmap.yaml
+#[[###]]# configmap.yaml
 - Configuración de Spring Boot
 - Actuator endpoints habilitados
-- Configuración de JPA, Liquibase y Redis
+- Configuración de JPA, Flyway y Redis
 
-### secret.yaml
+#[[###]]# secret.yaml
 ⚠️ **IMPORTANTE**: Cambiar las credenciales por defecto en producción
 - Usuario de base de datos: myuser
 - Contraseña de base de datos: secret
 
-### postgres-deployment.yaml
+#[[###]]# postgres-deployment.yaml
 - PostgreSQL 18.0
 - PersistentVolumeClaim de 5Gi
 - Liveness y Readiness probes
 - Credenciales desde Secret
 
-### redis-deployment.yaml
+#[[###]]# redis-deployment.yaml
 - Redis 8.2.1
 - PersistentVolumeClaim de 1Gi
 - Probes configuradas
 
-### ingress.yaml
+#[[###]]# ingress.yaml
 - Ingress controller: nginx
 - Host: ${artifactId}.local
 
-## Entornos
+#[[##]]# Entornos
 
-### Development (dev/)
+#[[###]]# Development (dev/)
 ```bash
 kubectl apply -k k8s/dev/
 ```
@@ -79,7 +79,7 @@ kubectl apply -k k8s/dev/
 - Namespace: dev
 - Perfil Spring: dev
 
-### Test (test/)
+#[[###]]# Test (test/)
 ```bash
 kubectl apply -k k8s/test/
 ```
@@ -90,7 +90,7 @@ kubectl apply -k k8s/test/
 - Perfil Spring: test
 - Sin Ingress
 
-### Staging (staging/)
+#[[###]]# Staging (staging/)
 ```bash
 kubectl apply -k k8s/staging/
 ```
@@ -103,7 +103,7 @@ kubectl apply -k k8s/staging/
 - Perfil Spring: staging
 - Autoscaling basado en CPU (70%) y Memoria (80%)
 
-### Production (prod/)
+#[[###]]# Production (prod/)
 ```bash
 kubectl apply -k k8s/prod/
 ```
@@ -117,9 +117,9 @@ kubectl apply -k k8s/prod/
 - PodDisruptionBudget (mínimo 2 pods disponibles)
 - Autoscaling agresivo
 
-## Uso con kubectl
+#[[##]]# Uso con kubectl
 
-### Desplegar en el entorno por defecto
+#[[###]]# Desplegar en el entorno por defecto
 ```bash
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
@@ -129,7 +129,7 @@ kubectl apply -f k8s/postgres-deployment.yaml
 kubectl apply -f k8s/redis-deployment.yaml
 ```
 
-### Desplegar con Kustomize
+#[[###]]# Desplegar con Kustomize
 ```bash
 # Desarrollo
 kubectl apply -k k8s/dev/
@@ -144,7 +144,7 @@ kubectl apply -k k8s/staging/
 kubectl apply -k k8s/prod/
 ```
 
-### Ver recursos desplegados
+#[[###]]# Ver recursos desplegados
 ```bash
 # Desarrollo
 kubectl get all -n dev
@@ -156,7 +156,7 @@ kubectl get all -n staging
 kubectl get all -n production
 ```
 
-### Ver logs
+#[[###]]# Ver logs
 ```bash
 # Ver logs de la aplicación
 kubectl logs -f deployment/${artifactId} -n dev
@@ -165,7 +165,7 @@ kubectl logs -f deployment/${artifactId} -n dev
 kubectl logs -f deployment/postgres -n dev
 ```
 
-### Port forwarding para testing local
+#[[###]]# Port forwarding para testing local
 ```bash
 # Aplicación
 kubectl port-forward svc/${artifactId} 8080:8080 -n dev
@@ -177,27 +177,27 @@ kubectl port-forward svc/postgres 5432:5432 -n dev
 kubectl port-forward svc/redis 6379:6379 -n dev
 ```
 
-### Escalar manualmente
+#[[###]]# Escalar manualmente
 ```bash
 kubectl scale deployment/${artifactId} --replicas=3 -n dev
 ```
 
-### Ver HPA
+#[[###]]# Ver HPA
 ```bash
 kubectl get hpa -n staging
 kubectl describe hpa ${artifactId}-hpa -n staging
 ```
 
-## Uso con Skaffold
+#[[##]]# Uso con Skaffold
 
 Skaffold está configurado para usar estos manifiestos automáticamente.
 
-### Desarrollo local
+#[[###]]# Desarrollo local
 ```bash
 skaffold dev
 ```
 
-### Desplegar en entorno específico
+#[[###]]# Desplegar en entorno específico
 ```bash
 # Development
 skaffold run -p dev
@@ -212,14 +212,14 @@ skaffold run -p staging
 skaffold run -p prod
 ```
 
-### Debug remoto
+#[[###]]# Debug remoto
 ```bash
 skaffold debug
 ```
 
-## Configuración Adicional
+#[[##]]# Configuración Adicional
 
-### Cambiar credenciales de base de datos
+#[[###]]# Cambiar credenciales de base de datos
 
 1. Crear un nuevo secret:
 ```bash
@@ -234,7 +234,7 @@ kubectl create secret generic ${artifactId}-secret \
 kubectl edit secret ${artifactId}-secret -n production
 ```
 
-### Agregar variables de entorno adicionales
+#[[###]]# Agregar variables de entorno adicionales
 
 Editar `configmap.yaml` o agregar variables en `deployment.yaml`:
 
@@ -244,7 +244,7 @@ env:
     value: "mi_valor"
 ```
 
-### Configurar Ingress con TLS
+#[[###]]# Configurar Ingress con TLS
 
 Agregar a `ingress.yaml`:
 
@@ -256,25 +256,25 @@ spec:
       secretName: ${artifactId}-tls
 ```
 
-### Modificar recursos por entorno
+#[[###]]# Modificar recursos por entorno
 
 Editar el archivo `kustomization.yaml` del entorno correspondiente.
 
-## Troubleshooting
+#[[##]]# Troubleshooting
 
-### Pod no inicia
+#[[###]]# Pod no inicia
 ```bash
 kubectl describe pod <pod-name> -n <namespace>
 kubectl logs <pod-name> -n <namespace>
 ```
 
-### Probes fallan
+#[[###]]# Probes fallan
 ```bash
 # Verificar health endpoint
 kubectl exec -it <pod-name> -n <namespace> -- curl localhost:8080/actuator/health
 ```
 
-### Base de datos no conecta
+#[[###]]# Base de datos no conecta
 ```bash
 # Verificar que postgres esté corriendo
 kubectl get pods -l app=postgres -n <namespace>
@@ -283,7 +283,7 @@ kubectl get pods -l app=postgres -n <namespace>
 kubectl exec -it <pod-name> -n <namespace> -- nc -zv postgres 5432
 ```
 
-### HPA no escala
+#[[###]]# HPA no escala
 ```bash
 # Verificar métricas
 kubectl top pods -n <namespace>
@@ -292,7 +292,7 @@ kubectl top pods -n <namespace>
 kubectl describe hpa ${artifactId}-hpa -n <namespace>
 ```
 
-## Mejores Prácticas
+#[[##]]# Mejores Prácticas
 
 1. **Secrets**: Usar herramientas como Sealed Secrets o external-secrets en producción
 2. **Resources**: Ajustar requests y limits basándose en métricas reales
@@ -302,7 +302,7 @@ kubectl describe hpa ${artifactId}-hpa -n <namespace>
 6. **Backups**: Configurar backups automáticos para PostgreSQL
 7. **Monitoring**: Integrar con Prometheus/Grafana para monitoreo
 
-## Referencias
+#[[##]]# Referencias
 
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [Kustomize](https://kustomize.io/)

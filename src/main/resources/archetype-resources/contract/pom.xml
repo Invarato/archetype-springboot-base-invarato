@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      EL CONTRATO. Aqui vive `src/main/resources/openapi/openapi.json`: la fuente de verdad de la API frente
+      a quien la consume (front, otros servicios, clientes generados).
+
+      Existe desde el minuto cero, aunque de momento solo guarde el fichero, porque este es el modulo donde
+      luego cuelgan sin refactor:
+        - el openapi.json generado desde el codigo (springdoc) y versionado,
+        - los clientes Java / Python y los stubs generados a partir de el,
+        - un test que falle si el contrato cambia sin querer.
+
+      Se empaqueta como jar para que otro proyecto pueda declarar una dependencia y obtener la especificacion
+      sin copiarla a mano.
+
+      ⚠️ La direccion de la dependencia es SIEMPRE contract <- app. Nunca al reves.
+    -->
+    <parent>
+        <groupId>${groupId}</groupId>
+        <artifactId>${artifactId}</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>${artifactId}-contract</artifactId>
+    <name>${artifactId}-contract</name>
+    <description>Contrato OpenAPI de ${artifactId}</description>
+
+</project>

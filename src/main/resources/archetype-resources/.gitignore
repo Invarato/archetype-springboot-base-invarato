@@ -33,6 +33,7 @@ build/
 .vscode/
 
 
-/.mvn/
 
-/starter
+
+# Maven wrapper: se versiona el script y sus properties, no la distribucion descargada
+.mvn/wrapper/maven-wrapper.jar

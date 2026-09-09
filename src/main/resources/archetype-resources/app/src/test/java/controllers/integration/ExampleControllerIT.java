@@ -1,7 +1,7 @@
 package ${groupId}.controllers.integration;
 
-{groupId}.common.UtilsTest;
-{groupId}.controllers.integration.common.BaseControllerIT;
+import ${groupId}.common.UtilsTest;
+import ${groupId}.controllers.integration.common.BaseControllerIT;
 import ${groupId}.dtos.requests.MyTableRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;

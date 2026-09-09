@@ -2,7 +2,7 @@
 
 Esta guía documenta el uso de Skaffold para el desarrollo, testing y despliegue de la aplicación Spring Boot en Kubernetes.
 
-## Tabla de Contenidos
+#[[##]]# Tabla de Contenidos
 
 - [¿Qué es Skaffold?](#qué-es-skaffold)
 - [Requisitos Previos](#requisitos-previos)
@@ -20,7 +20,7 @@ Esta guía documenta el uso de Skaffold para el desarrollo, testing y despliegue
 - [Troubleshooting](#troubleshooting)
 - [Mejores Prácticas](#mejores-prácticas)
 
-## ¿Qué es Skaffold?
+#[[##]]# ¿Qué es Skaffold?
 
 Skaffold es una herramienta de línea de comandos que facilita el desarrollo continuo de aplicaciones Kubernetes. Automatiza:
 
@@ -31,9 +31,9 @@ Skaffold es una herramienta de línea de comandos que facilita el desarrollo con
 - 🔍 **Logs** agregados de múltiples pods
 - 🧪 **Testing** automatizado
 
-## Requisitos Previos
+#[[##]]# Requisitos Previos
 
-### Software necesario
+#[[###]]# Software necesario
 
 - **Skaffold**: v2.0 o superior
   ```bash
@@ -62,7 +62,7 @@ Skaffold es una herramienta de línea de comandos que facilita el desarrollo con
   kubectl version --client
   ```
 
-### Configuración inicial
+#[[###]]# Configuración inicial
 
 1. **Iniciar cluster de Kubernetes local**:
    ```bash
@@ -90,9 +90,9 @@ Skaffold es una herramienta de línea de comandos que facilita el desarrollo con
    kubectl create namespace production
    ```
 
-## Inicio Rápido
+#[[##]]# Inicio Rápido
 
-### Desarrollo rápido con hot reload
+#[[###]]# Desarrollo rápido con hot reload
 
 ```bash
 skaffold dev
@@ -106,23 +106,23 @@ Este comando:
 5. Reconstruye y redespliega automáticamente
 6. Muestra logs en tiempo real
 
-### Desplegar una vez y salir
+#[[###]]# Desplegar una vez y salir
 
 ```bash
 skaffold run
 ```
 
-### Limpiar recursos
+#[[###]]# Limpiar recursos
 
 ```bash
 skaffold delete
 ```
 
-## Configuración
+#[[##]]# Configuración
 
 El archivo `skaffold.yaml` en la raíz del proyecto contiene toda la configuración.
 
-### Estructura del archivo
+#[[###]]# Estructura del archivo
 
 ```yaml
 apiVersion: skaffold/v4beta11
@@ -137,15 +137,15 @@ profiles:       # Perfiles para diferentes entornos
 verify:         # Verificaciones post-deployment
 ```
 
-### Variables disponibles
+#[[###]]# Variables disponibles
 
 - `{{.VERSION}}`: Versión de la aplicación (desde git)
 - `{{.IMAGE_TAG}}`: Tag de la imagen Docker
 - `${artifactId}`: Nombre del proyecto
 
-## Comandos Principales
+#[[##]]# Comandos Principales
 
-### `skaffold dev`
+#[[###]]# `skaffold dev`
 
 Modo desarrollo con hot reload continuo.
 
@@ -173,7 +173,7 @@ skaffold dev -v info
 - ✅ Rebuilds incrementales
 - ✅ Limpieza automática al salir (Ctrl+C)
 
-### `skaffold run`
+#[[###]]# `skaffold run`
 
 Ejecuta build, deploy y sale.
 
@@ -191,7 +191,7 @@ skaffold run --tag=v1.2.3
 skaffold run --namespace=my-namespace
 ```
 
-### `skaffold build`
+#[[###]]# `skaffold build`
 
 Solo construye la imagen sin desplegar.
 
@@ -206,7 +206,7 @@ skaffold build --push
 skaffold build --tag=latest
 ```
 
-### `skaffold deploy`
+#[[###]]# `skaffold deploy`
 
 Solo despliega (asume que la imagen ya existe).
 
@@ -221,7 +221,7 @@ skaffold deploy -p prod
 skaffold deploy --build-artifacts=build.json
 ```
 
-### `skaffold debug`
+#[[###]]# `skaffold debug`
 
 Modo debug con remote debugging habilitado.
 
@@ -232,7 +232,7 @@ skaffold debug
 # El debugger quedará expuesto en localhost:5005
 ```
 
-### `skaffold delete`
+#[[###]]# `skaffold delete`
 
 Limpia todos los recursos desplegados.
 
@@ -244,7 +244,7 @@ skaffold delete
 skaffold delete -p staging
 ```
 
-### `skaffold render`
+#[[###]]# `skaffold render`
 
 Renderiza los manifiestos sin desplegar.
 
@@ -259,11 +259,11 @@ skaffold render -p prod
 skaffold render -p prod > manifests.yaml
 ```
 
-## Profiles (Perfiles)
+#[[##]]# Profiles (Perfiles)
 
 Los perfiles permiten diferentes configuraciones según el entorno.
 
-### Profile: `dev` (Desarrollo)
+#[[###]]# Profile: `dev` (Desarrollo)
 
 ```bash
 skaffold dev -p dev
@@ -278,7 +278,7 @@ skaffold dev -p dev
 
 **Uso típico**: Desarrollo local diario
 
-### Profile: `local` (Local con Docker Compose)
+#[[###]]# Profile: `local` (Local con Docker Compose)
 
 ```bash
 skaffold run -p local
@@ -292,7 +292,7 @@ skaffold run -p local
 
 **Uso típico**: Testing sin Kubernetes
 
-### Profile: `test` (Testing)
+#[[###]]# Profile: `test` (Testing)
 
 ```bash
 skaffold run -p test
@@ -306,7 +306,7 @@ skaffold run -p test
 
 **Uso típico**: CI/CD pipelines, testing automatizado
 
-### Profile: `staging` (Pre-producción)
+#[[###]]# Profile: `staging` (Pre-producción)
 
 ```bash
 skaffold run -p staging
@@ -322,7 +322,7 @@ skaffold run -p staging
 
 **Uso típico**: Ambiente de staging/QA
 
-### Profile: `prod` (Producción)
+#[[###]]# Profile: `prod` (Producción)
 
 ```bash
 skaffold run -p prod
@@ -340,7 +340,7 @@ skaffold run -p prod
 
 **Uso típico**: Producción
 
-### Profile: `debug` (Debug Remoto)
+#[[###]]# Profile: `debug` (Debug Remoto)
 
 ```bash
 skaffold debug
@@ -354,9 +354,9 @@ skaffold debug
 
 **Uso típico**: Debugging en Kubernetes
 
-## Desarrollo Local
+#[[##]]# Desarrollo Local
 
-### Workflow típico de desarrollo
+#[[###]]# Workflow típico de desarrollo
 
 1. **Iniciar desarrollo**:
    ```bash
@@ -380,7 +380,7 @@ skaffold debug
 5. **Detener**:
    - `Ctrl+C` limpia automáticamente los recursos
 
-### Sincronización de archivos
+#[[###]]# Sincronización de archivos
 
 Skaffold sincroniza automáticamente cambios en:
 - `src/**/*.java`
@@ -390,7 +390,7 @@ Skaffold sincroniza automáticamente cambios en:
 
 **Sin necesidad de rebuild completo** en modo `dev`.
 
-### Desarrollo sin Kubernetes
+#[[###]]# Desarrollo sin Kubernetes
 
 Si no tienes Kubernetes disponible:
 
@@ -400,9 +400,9 @@ skaffold run -p local
 
 Esto usa Docker Compose con `compose-app.yml`.
 
-## Testing
+#[[##]]# Testing
 
-### Testing automatizado
+#[[###]]# Testing automatizado
 
 ```bash
 skaffold run -p test
@@ -412,7 +412,7 @@ Esto ejecuta automáticamente:
 1. `./mvnw test`
 2. `./mvnw verify`
 
-### Testing manual post-deployment
+#[[###]]# Testing manual post-deployment
 
 ```bash
 # Desplegar
@@ -425,7 +425,7 @@ kubectl exec -it deployment/${artifactId} -n test -- ./mvnw test
 skaffold delete -p test
 ```
 
-### Verificaciones de health
+#[[###]]# Verificaciones de health
 
 Las verificaciones están configuradas en el perfil y se ejecutan automáticamente:
 
@@ -443,9 +443,9 @@ verify:
           curl -f http://${artifactId}:8080/actuator/health/liveness
 ```
 
-## Despliegue a Entornos
+#[[##]]# Despliegue a Entornos
 
-### Staging
+#[[###]]# Staging
 
 ```bash
 # Desplegar a staging
@@ -461,7 +461,7 @@ kubectl logs -f deployment/staging-${artifactId} -n staging
 skaffold delete -p staging
 ```
 
-### Producción
+#[[###]]# Producción
 
 ⚠️ **IMPORTANTE**: Requiere configuración de registry y permisos.
 
@@ -485,7 +485,7 @@ kubectl logs -l name=smoke-test -n production
 kubectl rollout undo deployment/prod-${artifactId} -n production
 ```
 
-### Despliegue con versión específica
+#[[###]]# Despliegue con versión específica
 
 ```bash
 # Etiquetar en git
@@ -496,15 +496,15 @@ git push origin v1.2.3
 skaffold run -p prod
 ```
 
-## Debug Remoto
+#[[##]]# Debug Remoto
 
-### Iniciar sesión de debug
+#[[###]]# Iniciar sesión de debug
 
 ```bash
 skaffold debug
 ```
 
-### Conectar desde IntelliJ IDEA
+#[[###]]# Conectar desde IntelliJ IDEA
 
 1. **Crear configuración de Remote JVM Debug**:
    - Run → Edit Configurations
@@ -520,7 +520,7 @@ skaffold debug
    - Hacer requests a la aplicación
    - Los breakpoints se activarán
 
-### Conectar desde VS Code
+#[[###]]# Conectar desde VS Code
 
 Agregar a `.vscode/launch.json`:
 
@@ -534,9 +534,9 @@ Agregar a `.vscode/launch.json`:
 }
 ```
 
-## Port Forwarding
+#[[##]]# Port Forwarding
 
-### Port forwarding automático
+#[[###]]# Port forwarding automático
 
 Skaffold configura automáticamente port forwarding para:
 
@@ -546,7 +546,7 @@ Skaffold configura automáticamente port forwarding para:
 | PostgreSQL | 5432 | 5432 |
 | Redis | 6379 | 6379 |
 
-### Port forwarding manual
+#[[###]]# Port forwarding manual
 
 Si necesitas control manual:
 
@@ -558,7 +558,7 @@ skaffold dev --port-forward=off
 kubectl port-forward svc/${artifactId} 8080:8080
 ```
 
-### Acceder a servicios
+#[[###]]# Acceder a servicios
 
 ```bash
 # Aplicación
@@ -571,9 +571,9 @@ psql -h localhost -p 5432 -U myuser -d postgres
 redis-cli -h localhost -p 6379
 ```
 
-## Flujos de Trabajo Comunes
+#[[##]]# Flujos de Trabajo Comunes
 
-### Workflow 1: Desarrollo de nueva feature
+#[[###]]# Workflow 1: Desarrollo de nueva feature
 
 ```bash
 # 1. Crear rama
@@ -592,7 +592,7 @@ git commit -m "Nueva funcionalidad"
 # 5. Detener skaffold (Ctrl+C)
 ```
 
-### Workflow 2: Testing antes de merge
+#[[###]]# Workflow 2: Testing antes de merge
 
 ```bash
 # 1. Ejecutar tests en Kubernetes
@@ -609,7 +609,7 @@ git checkout main
 git merge feature/nueva-funcionalidad
 ```
 
-### Workflow 3: Deploy a staging
+#[[###]]# Workflow 3: Deploy a staging
 
 ```bash
 # 1. Asegurar que estás en main
@@ -630,7 +630,7 @@ kubectl logs -f deployment/staging-${artifactId} -n staging
 skaffold delete -p staging
 ```
 
-### Workflow 4: Release a producción
+#[[###]]# Workflow 4: Release a producción
 
 ```bash
 # 1. Crear tag de versión
@@ -654,7 +654,7 @@ kubectl exec -it deployment/prod-${artifactId} -n production -- \
 kubectl get hpa -n production -w
 ```
 
-### Workflow 5: Debugging en Kubernetes
+#[[###]]# Workflow 5: Debugging en Kubernetes
 
 ```bash
 # 1. Iniciar modo debug
@@ -672,7 +672,7 @@ curl http://localhost:8080/api/endpoint
 # 6. Detener (Ctrl+C)
 ```
 
-### Workflow 6: Renderizar manifiestos para revisión
+#[[###]]# Workflow 6: Renderizar manifiestos para revisión
 
 ```bash
 # Ver manifiestos que se desplegarían
@@ -685,11 +685,11 @@ cat prod-manifests.yaml
 kubectl apply -f prod-manifests.yaml
 ```
 
-## Integración con Makefile
+#[[##]]# Integración con Makefile
 
 El proyecto incluye un Makefile que facilita el uso de Skaffold.
 
-### Comandos integrados
+#[[###]]# Comandos integrados
 
 ```bash
 # Desarrollo
@@ -702,7 +702,7 @@ make docker-build    # Usa Skaffold internamente
 make test            # Incluye tests en Kubernetes
 ```
 
-### Uso combinado
+#[[###]]# Uso combinado
 
 ```bash
 # 1. Levantar servicios con Makefile
@@ -719,9 +719,9 @@ skaffold delete
 make docker-down
 ```
 
-## Troubleshooting
+#[[##]]# Troubleshooting
 
-### Problema: Skaffold no detecta cambios
+#[[###]]# Problema: Skaffold no detecta cambios
 
 **Solución 1**: Verificar configuración de sync
 ```bash
@@ -734,7 +734,7 @@ skaffold dev -v debug
 touch src/main/java/MainApplication.java
 ```
 
-### Problema: Build falla
+#[[###]]# Problema: Build falla
 
 **Solución 1**: Verificar Dockerfile
 ```bash
@@ -747,7 +747,7 @@ docker system prune -a
 skaffold dev --cache-artifacts=false
 ```
 
-### Problema: Deploy falla
+#[[###]]# Problema: Deploy falla
 
 **Solución 1**: Verificar manifiestos
 ```bash
@@ -761,7 +761,7 @@ kubectl config current-context
 kubectl config use-context <correct-context>
 ```
 
-### Problema: Port forwarding no funciona
+#[[###]]# Problema: Port forwarding no funciona
 
 **Solución 1**: Verificar que el pod esté corriendo
 ```bash
@@ -774,7 +774,7 @@ kubectl logs <pod-name>
 kubectl port-forward svc/${artifactId} 8080:8080
 ```
 
-### Problema: Imágenes no se encuentran
+#[[###]]# Problema: Imágenes no se encuentran
 
 **Solución**: Verificar registry y tag policy
 ```bash
@@ -785,7 +785,7 @@ kubectl describe pod <pod-name> | grep Image
 docker images | grep ${artifactId}
 ```
 
-### Problema: "No space left on device"
+#[[###]]# Problema: "No space left on device"
 
 **Solución**: Limpiar Docker
 ```bash
@@ -793,14 +793,14 @@ docker system prune -a --volumes
 minikube ssh -- docker system prune -a
 ```
 
-### Problema: Cambios de properties no se reflejan
+#[[###]]# Problema: Cambios de properties no se reflejan
 
 **Solución**: Reiniciar pod manualmente
 ```bash
 kubectl rollout restart deployment/${artifactId}
 ```
 
-### Problema: Health checks fallan
+#[[###]]# Problema: Health checks fallan
 
 **Solución**: Verificar actuator endpoints
 ```bash
@@ -808,9 +808,9 @@ kubectl exec -it deployment/${artifactId} -- curl localhost:8080/actuator/health
 kubectl logs deployment/${artifactId}
 ```
 
-## Mejores Prácticas
+#[[##]]# Mejores Prácticas
 
-### 1. Desarrollo
+#[[###]]# 1. Desarrollo
 
 ✅ **Usar `skaffold dev` siempre para desarrollo local**
 - Hot reload automático
@@ -825,7 +825,7 @@ kubectl logs deployment/${artifactId}
 - Usa port forwarding automático
 - Documenta puertos usados
 
-### 2. Testing
+#[[###]]# 2. Testing
 
 ✅ **Profile dedicado para tests**
 - Usa `-p test` para CI/CD
@@ -837,7 +837,7 @@ kubectl logs deployment/${artifactId}
 - Verifica endpoints críticos
 - Usa smoke tests
 
-### 3. Staging/Producción
+#[[###]]# 3. Staging/Producción
 
 ✅ **Tags basados en git**
 - Usa tags semánticos (v1.2.3)
@@ -851,7 +851,7 @@ kubectl logs deployment/${artifactId}
 - Usa Helm charts para prod
 - Valores diferentes por entorno
 
-### 4. Seguridad
+#[[###]]# 4. Seguridad
 
 ⚠️ **No commitear secrets**
 - Usa Sealed Secrets o External Secrets
@@ -861,7 +861,7 @@ kubectl logs deployment/${artifactId}
 - Escanea imágenes antes de prod
 - Usa tags inmutables
 
-### 5. Performance
+#[[###]]# 5. Performance
 
 ⚠️ **BuildKit**
 - Habilita BuildKit para builds más rápidos
@@ -871,7 +871,7 @@ kubectl logs deployment/${artifactId}
 - Define requests y limits apropiados
 - Monitorea uso real
 
-### 6. Monitoreo
+#[[###]]# 6. Monitoreo
 
 ✅ **Logs centralizados**
 - Skaffold agrega logs automáticamente
@@ -881,7 +881,7 @@ kubectl logs deployment/${artifactId}
 - Configura liveness, readiness y startup probes
 - Usa actuator endpoints de Spring Boot
 
-## Comandos de Referencia Rápida
+#[[##]]# Comandos de Referencia Rápida
 
 ```bash
 # Desarrollo
@@ -919,7 +919,7 @@ skaffold version                # Ver versión
 --namespace=<ns>               # Namespace específico
 ```
 
-## Referencias
+#[[##]]# Referencias
 
 - [Skaffold Documentation](https://skaffold.dev/docs/)
 - [Skaffold GitHub](https://github.com/GoogleContainerTools/skaffold)
@@ -928,7 +928,7 @@ skaffold version                # Ver versión
 - [Kubernetes Manifests - README.md](k8s/README.md)
 - [Makefile - MAKEFILE.md](MAKEFILE.md)
 
-## Soporte
+#[[##]]# Soporte
 
 Para más información:
 - Ver logs detallados: `skaffold dev -v debug`

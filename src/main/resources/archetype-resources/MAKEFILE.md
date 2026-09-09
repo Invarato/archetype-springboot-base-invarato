@@ -2,14 +2,14 @@
 
 Esta guía documenta el uso del Makefile incluido en el proyecto Spring Boot para facilitar el desarrollo y las operaciones comunes.
 
-## Tabla de Contenidos
+#[[##]]# Tabla de Contenidos
 
 - [Requisitos Previos](#requisitos-previos)
 - [Inicio Rápido](#inicio-rápido)
 - [Comandos de Desarrollo](#comandos-de-desarrollo)
 - [Comandos de Build](#comandos-de-build)
 - [Comandos Docker](#comandos-docker)
-- [Comandos Liquibase](#comandos-liquibase)
+- [Comandos de Base de Datos (Flyway)](#comandos-de-base-de-datos-flyway)
 - [Comandos de Dependencias](#comandos-de-dependencias)
 - [Comandos de Calidad de Código](#comandos-de-calidad-de-código)
 - [Comandos de Monitoreo](#comandos-de-monitoreo)
@@ -17,14 +17,14 @@ Esta guía documenta el uso del Makefile incluido en el proyecto Spring Boot par
 - [Variables de Configuración](#variables-de-configuración)
 - [Ejemplos de Uso](#ejemplos-de-uso)
 
-## Requisitos Previos
+#[[##]]# Requisitos Previos
 
 - **Make**: Instalado en tu sistema
 - **Docker**: Para ejecutar servicios de base de datos
 - **Maven**: Incluido vía Maven Wrapper (`./mvnw`)
 - **Java 25**: Según configuración del proyecto
 
-## Inicio Rápido
+#[[##]]# Inicio Rápido
 
 Para ver todos los comandos disponibles:
 
@@ -42,9 +42,9 @@ Este comando levanta los servicios Docker y ejecuta la aplicación en modo desar
 
 ---
 
-## Comandos de Desarrollo
+#[[##]]# Comandos de Desarrollo
 
-### `make run`
+#[[###]]# `make run`
 
 Ejecuta la aplicación con el perfil de desarrollo (dev).
 
@@ -54,7 +54,7 @@ make run
 
 Automáticamente levanta los servicios Docker (PostgreSQL, Redis) antes de iniciar la aplicación.
 
-### `make run-dev`
+#[[###]]# `make run-dev`
 
 Ejecuta explícitamente la aplicación con el perfil dev.
 
@@ -62,7 +62,7 @@ Ejecuta explícitamente la aplicación con el perfil dev.
 make run-dev
 ```
 
-### `make run-prod`
+#[[###]]# `make run-prod`
 
 Ejecuta la aplicación con el perfil de producción.
 
@@ -70,7 +70,7 @@ Ejecuta la aplicación con el perfil de producción.
 make run-prod
 ```
 
-### `make test`
+#[[###]]# `make test`
 
 Ejecuta todos los tests del proyecto.
 
@@ -78,7 +78,7 @@ Ejecuta todos los tests del proyecto.
 make test
 ```
 
-### `make verify`
+#[[###]]# `make verify`
 
 Ejecuta tests y verifica que el build sea correcto.
 
@@ -86,7 +86,7 @@ Ejecuta tests y verifica que el build sea correcto.
 make verify
 ```
 
-### `make stop`
+#[[###]]# `make stop`
 
 Detiene la aplicación en ejecución.
 
@@ -96,9 +96,9 @@ make stop
 
 ---
 
-## Comandos de Build
+#[[##]]# Comandos de Build
 
-### `make clean`
+#[[###]]# `make clean`
 
 Limpia todos los artefactos de compilación.
 
@@ -106,7 +106,7 @@ Limpia todos los artefactos de compilación.
 make clean
 ```
 
-### `make build`
+#[[###]]# `make build`
 
 Limpia y compila el proyecto.
 
@@ -114,7 +114,7 @@ Limpia y compila el proyecto.
 make build
 ```
 
-### `make package`
+#[[###]]# `make package`
 
 Crea el archivo JAR/WAR del proyecto (salta los tests).
 
@@ -124,7 +124,7 @@ make package
 
 El artefacto generado se encuentra en `target/`.
 
-### `make install`
+#[[###]]# `make install`
 
 Instala el proyecto en el repositorio Maven local.
 
@@ -134,9 +134,9 @@ make install
 
 ---
 
-## Comandos Docker
+#[[##]]# Comandos Docker
 
-### `make docker-up`
+#[[###]]# `make docker-up`
 
 Inicia los servicios Docker definidos en `compose-app.yml`:
 - PostgreSQL (puerto 5432)
@@ -146,7 +146,7 @@ Inicia los servicios Docker definidos en `compose-app.yml`:
 make docker-up
 ```
 
-### `make docker-down`
+#[[###]]# `make docker-down`
 
 Detiene todos los servicios Docker.
 
@@ -154,7 +154,7 @@ Detiene todos los servicios Docker.
 make docker-down
 ```
 
-### `make docker-restart`
+#[[###]]# `make docker-restart`
 
 Reinicia todos los servicios Docker.
 
@@ -162,7 +162,7 @@ Reinicia todos los servicios Docker.
 make docker-restart
 ```
 
-### `make docker-build`
+#[[###]]# `make docker-build`
 
 Construye la imagen Docker de la aplicación.
 
@@ -172,7 +172,7 @@ make docker-build
 
 Por defecto usa el nombre del proyecto y el tag `latest`.
 
-### `make docker-run`
+#[[###]]# `make docker-run`
 
 Ejecuta la aplicación en un contenedor Docker.
 
@@ -180,7 +180,7 @@ Ejecuta la aplicación en un contenedor Docker.
 make docker-run
 ```
 
-### `make logs`
+#[[###]]# `make logs`
 
 Muestra los logs de los servicios Docker en tiempo real.
 
@@ -192,51 +192,64 @@ Presiona `Ctrl+C` para salir.
 
 ---
 
-## Comandos Liquibase
+#[[##]]# Comandos de Base de Datos (Flyway)
 
-### `make liquibase-diff`
+El esquema lo gobierna **Flyway**. Las migraciones viven en
+`app/src/main/resources/db/migration/` y se aplican **al arrancar la aplicación**, no con un comando aparte.
 
-Genera un changelog de diferencias entre la base de datos actual y el modelo de Hibernate.
+`spring.jpa.hibernate.ddl-auto` es `validate` en todos los entornos: Hibernate nunca toca el esquema, solo
+comprueba que las entidades cuadran con él. Ese `validate` es además el **detector de deriva**: si añades un
+campo a una entidad y olvidas la migración, la aplicación no arranca.
 
-```bash
-make liquibase-diff
+#[[###]]# `make db-baseline`
+
+Genera la **primera** migración (`V1__init.sql`) a partir del metadato de las entidades JPA. No necesita
+ninguna base de datos levantada.
+
+```shell
+make db-baseline
 ```
 
-Utiliza internamente el script `liquibase.bash` (opción 2).
+Deja el resultado en `app/target/generated-schema/V1__init.sql`. **Léelo antes de moverlo**: Hibernate
+nombra índices y constraints como le parece y no pone comentarios. Cuando te convenza:
 
-### `make liquibase-changelog`
-
-Genera el changelog inicial de la base de datos.
-
-```bash
-make liquibase-changelog
+```shell
+mv app/target/generated-schema/V1__init.sql app/src/main/resources/db/migration/
 ```
 
-Utiliza internamente el script `liquibase.bash` (opción 1).
+⚠️ **Solo la primera vez.** A partir de ahí manda Flyway y las versiones siguientes (`V2__...`, `V3__...`) se
+escriben a mano. El target se niega a ejecutarse si ya existe `V1__init.sql`: regenerarlo cambiaría su
+checksum y Flyway abortaría con `Migration checksum mismatch` allí donde ya estuviera aplicada.
 
-### `make liquibase-sql`
+#[[###]]# `make db-info`
 
-Genera el archivo SQL con las migraciones pendientes.
+Muestra el estado de las migraciones aplicadas, leyéndolo del endpoint `/actuator/flyway` de la aplicación
+**arrancada**.
 
-```bash
-make liquibase-sql
+```shell
+make db-info
 ```
 
-El archivo se genera en `target/liquibase/migrate.sql`.
+#[[###]]# Migraciones nuevas
 
-### `make liquibase-update`
+Se crean a mano siguiendo la convención de Flyway `V<version>__<descripcion>.sql` (**dos** guiones bajos):
 
-Aplica las migraciones pendientes a la base de datos.
-
-```bash
-make liquibase-update
+```
+app/src/main/resources/db/migration/
+├── V1__init.sql
+├── V2__add_indice_nombre.sql
+└── V3__tabla_pedidos.sql
 ```
 
----
+**Una migración ya aplicada no se edita nunca**, ni para arreglar un typo: se escribe la siguiente. El
+checksum existe justamente para impedirlo.
 
-## Comandos de Dependencias
+Los **datos de prueba no van por Flyway** (acabarían aplicándose en producción): van por un runner del
+perfil `dev`. Flyway es para estructura.
 
-### `make deps-tree`
+#[[##]]# Comandos de Dependencias
+
+#[[###]]# `make deps-tree`
 
 Muestra el árbol completo de dependencias del proyecto.
 
@@ -244,7 +257,7 @@ Muestra el árbol completo de dependencias del proyecto.
 make deps-tree
 ```
 
-### `make deps-updates`
+#[[###]]# `make deps-updates`
 
 Verifica si hay actualizaciones disponibles para las dependencias.
 
@@ -254,9 +267,9 @@ make deps-updates
 
 ---
 
-## Comandos de Calidad de Código
+#[[##]]# Comandos de Calidad de Código
 
-### `make fmt`
+#[[###]]# `make fmt`
 
 Formatea el código según las convenciones de Spring.
 
@@ -264,7 +277,7 @@ Formatea el código según las convenciones de Spring.
 make fmt
 ```
 
-### `make check`
+#[[###]]# `make check`
 
 Valida que el código cumpla con las reglas de formato.
 
@@ -274,11 +287,11 @@ make check
 
 ---
 
-## Comandos de Monitoreo
+#[[##]]# Comandos de Monitoreo
 
 Estos comandos requieren que la aplicación esté ejecutándose con Actuator habilitado.
 
-### `make actuator-health`
+#[[###]]# `make actuator-health`
 
 Verifica el estado de salud de la aplicación.
 
@@ -286,7 +299,7 @@ Verifica el estado de salud de la aplicación.
 make actuator-health
 ```
 
-### `make actuator-info`
+#[[###]]# `make actuator-info`
 
 Muestra información de la aplicación.
 
@@ -294,7 +307,7 @@ Muestra información de la aplicación.
 make actuator-info
 ```
 
-### `make actuator-metrics`
+#[[###]]# `make actuator-metrics`
 
 Lista todas las métricas disponibles.
 
@@ -304,9 +317,9 @@ make actuator-metrics
 
 ---
 
-## Workflows Rápidos
+#[[##]]# Workflows Rápidos
 
-### `make dev`
+#[[###]]# `make dev`
 
 Workflow completo de desarrollo: levanta Docker y ejecuta la aplicación.
 
@@ -320,7 +333,7 @@ make docker-up
 make run-dev
 ```
 
-### `make rebuild`
+#[[###]]# `make rebuild`
 
 Limpia y reconstruye el proyecto.
 
@@ -328,7 +341,7 @@ Limpia y reconstruye el proyecto.
 make rebuild
 ```
 
-### `make fresh-start`
+#[[###]]# `make fresh-start`
 
 Reinicio completo: limpia todo, reinicia Docker, instala y ejecuta.
 
@@ -338,11 +351,11 @@ make fresh-start
 
 ---
 
-## Variables de Configuración
+#[[##]]# Variables de Configuración
 
 Puedes personalizar el comportamiento del Makefile usando variables:
 
-### `SPRING_PROFILE`
+#[[###]]# `SPRING_PROFILE`
 
 Define el perfil de Spring a utilizar (default: `dev`).
 
@@ -350,7 +363,7 @@ Define el perfil de Spring a utilizar (default: `dev`).
 make run SPRING_PROFILE=test
 ```
 
-### `DOCKER_IMAGE_NAME`
+#[[###]]# `DOCKER_IMAGE_NAME`
 
 Nombre de la imagen Docker (default: nombre del proyecto).
 
@@ -358,7 +371,7 @@ Nombre de la imagen Docker (default: nombre del proyecto).
 make docker-build DOCKER_IMAGE_NAME=mi-aplicacion
 ```
 
-### `DOCKER_IMAGE_TAG`
+#[[###]]# `DOCKER_IMAGE_TAG`
 
 Tag de la imagen Docker (default: `latest`).
 
@@ -368,9 +381,9 @@ make docker-build DOCKER_IMAGE_TAG=v1.0.0
 
 ---
 
-## Ejemplos de Uso
+#[[##]]# Ejemplos de Uso
 
-### Desarrollo diario típico
+#[[###]]# Desarrollo diario típico
 
 ```bash
 # Iniciar el día
@@ -390,21 +403,21 @@ make stop
 make docker-down
 ```
 
-### Crear una nueva migración de base de datos
-
+#[[###]]# Crear una nueva migración de base de datos
 ```bash
-# 1. Modificar entidades JPA
+# 1. Modificar las entidades JPA
 
-# 2. Generar diff
-make liquibase-diff
+# 2. Escribir A MANO la migracion que refleja el cambio
+#    app/src/main/resources/db/migration/V2__add_campo_email.sql
 
-# 3. Revisar el changelog generado en target/liquibase/
-
-# 4. Aplicar migración
-make liquibase-update
+# 3. Arrancar: Flyway la aplica y Hibernate valida que entidades y esquema cuadran
+make run
 ```
 
-### Preparar un release
+⚠️ No hay "generar diff": eso solo existe en la primera version (`make db-baseline`). A partir de ahi el
+detector de deriva es que la aplicacion NO ARRANCA si la migracion falta.
+
+#[[###]]# Preparar un release
 
 ```bash
 # Limpiar y verificar
@@ -418,7 +431,7 @@ make package
 make docker-build DOCKER_IMAGE_TAG=v2.1.0
 ```
 
-### Troubleshooting
+#[[###]]# Troubleshooting
 
 ```bash
 # Reiniciar todo desde cero
@@ -434,7 +447,7 @@ make deps-updates
 make docker-restart
 ```
 
-### Testing con diferentes perfiles
+#[[###]]# Testing con diferentes perfiles
 
 ```bash
 # Test con perfil de test
@@ -447,7 +460,7 @@ make test
 SPRING_PROFILES_ACTIVE=test make verify
 ```
 
-### CI/CD
+#[[###]]# CI/CD
 
 ```bash
 # Build en CI
@@ -459,14 +472,14 @@ make ci-package
 
 ---
 
-## Notas Adicionales
+#[[##]]# Notas Adicionales
 
 - El Makefile utiliza el Maven Wrapper (`./mvnw`) incluido en el proyecto
 - Los servicios Docker se definen en `compose-app.yml`
-- Las migraciones de Liquibase usan el script `liquibase.bash`
+- Las migraciones las gobierna Flyway (`app/src/main/resources/db/migration/`) y se aplican al arrancar
 - Los colores en la salida ayudan a identificar el estado de las operaciones
 
-## Soporte
+#[[##]]# Soporte
 
 Para más información sobre comandos específicos, ejecuta:
 

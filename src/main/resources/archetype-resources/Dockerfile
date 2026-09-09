@@ -25,12 +25,18 @@ ARG APP_VERSION
 
 WORKDIR /workspace
 
+# Primero SOLO los poms (y .mvn, que lleva el defecto de ${revision}): asi la capa de descarga de
+# dependencias se reaprovecha mientras no cambien los poms, aunque cambie el codigo.
+COPY .mvn ./.mvn
 COPY pom.xml ./
+COPY contract/pom.xml contract/
+COPY app/pom.xml app/
 
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -q -Drevision="${APP_VERSION}" -DskipTests dependency:go-offline
 
-COPY src ./src
+COPY contract/src contract/src
+COPY app/src app/src
 
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -q -Drevision="${APP_VERSION}" -DskipTests clean package
@@ -68,7 +74,9 @@ RUN apt-get update \
 RUN useradd -r -u 10001 appuser
 USER appuser
 
-COPY --from=build /workspace/target/*.jar /app/app.jar
+# Solo el jar del modulo app: es el unico ejecutable. (`*.jar` no captura el .jar.original que deja
+# spring-boot:repackage, porque ese no termina en .jar.)
+COPY --from=build /workspace/app/target/*.jar /app/app.jar
 
 EXPOSE 8080
 

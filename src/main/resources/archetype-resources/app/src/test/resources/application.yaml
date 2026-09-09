@@ -1,0 +1,24 @@
+# Configuracion de TESTS.
+#
+# El esquema de los tests lo construye FLYWAY desde cero sobre una base efimera, y despues Hibernate lo
+# valida contra las entidades. Ese ciclo completo es el ORACULO del esquema (docs/migraciones.md): si pasa,
+# es que las migraciones se aplican en orden sobre una base vacia Y concuerdan con las entidades.
+spring:
+  # Se desactivan los imports de configuracion externa (config server, vault...) que el micro pida en runtime
+  config:
+    import: ''
+
+  # Testcontainers via URL JDBC: levanta un Postgres efimero, distinto del de desarrollo, para no ensuciar
+  # la base con la que estas trabajando.
+  datasource:
+    url: jdbc:tc:postgresql:18.0:///test
+
+  flyway:
+    enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  cache:
+    type: none

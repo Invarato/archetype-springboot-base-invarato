@@ -4,6 +4,18 @@
         xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 https://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
         name="arquetipo">
 
+    <!--
+      ⚠️ ESTE FICHERO DECIDE QUE LLEGA AL PROYECTO GENERADO.
+      Un fichero puede existir en archetype-resources/ y NO generarse nunca si no esta declarado aqui. Ya nos
+      costo dos veces: k8s/ con los fileSet comentados (y skaffold.yaml generandose apuntando a manifiestos
+      inexistentes) y `liquibase.sh` declarado con otra extension que la del fichero real.
+
+      REGLA: si tocas la plantilla, comprueba en el proyecto generado que tu fichero esta ahi.
+
+      `filtered="true"`  -> se sustituyen ${groupId} / ${artifactId} (pasa por Velocity).
+      `packaged="true"`  -> el contenido cuelga del paquete (com/ejemplo/...).
+    -->
+
     <requiredProperties>
         <requiredProperty key="groupId">
             <defaultValue>${groupId}</defaultValue>
@@ -12,33 +24,23 @@
         <requiredProperty key="artifactId">
             <defaultValue>${artifactId}</defaultValue>
         </requiredProperty>
-
-        <requiredProperty key="versionStart">
-<!--            <defaultValue>1.0-SNAPSHOT</defaultValue>-->
-            <defaultValue>1.0.0</defaultValue>
-<!--            <defaultValue>${version}</defaultValue>-->
-        </requiredProperty>
-
-        <requiredProperty key="version">
-            <!--            <defaultValue>1.0-SNAPSHOT</defaultValue>-->
-            <defaultValue>1.0.0</defaultValue>
-<!--            <defaultValue>${version}</defaultValue>-->
-        </requiredProperty>
-
     </requiredProperties>
 
     <fileSets>
 
+        <!-- ═══ Modulo app: el microservicio ═══════════════════════════════════════════════ -->
+
         <fileSet filtered="true" packaged="true">
-            <directory>src/main/java</directory>
+            <directory>app/src/main/java</directory>
         </fileSet>
 
-        <fileSet filtered="false" packaged="false">
-            <directory>docker</directory>
+        <fileSet filtered="true" packaged="true">
+            <directory>app/src/test/java</directory>
         </fileSet>
 
+        <!-- Recursos que NO se filtran (binarios como el favicon, y los .gitkeep de db/migration) -->
         <fileSet encoding="UTF-8" filtered="false" preserve-empty-dirs="true">
-            <directory>src/main/resources</directory>
+            <directory>app/src/main/resources</directory>
             <includes>
                 <include>**/*</include>
             </includes>
@@ -51,20 +53,16 @@
         </fileSet>
 
         <fileSet encoding="UTF-8" filtered="true">
-            <directory>src/main/resources</directory>
+            <directory>app/src/main/resources</directory>
             <includes>
                 <include>**/*.properties</include>
                 <include>**/*.yaml</include>
                 <include>**/*.yml</include>
             </includes>
-        </fileSet>
-
-        <fileSet filtered="true" packaged="true">
-            <directory>src/test/java</directory>
         </fileSet>
 
         <fileSet encoding="UTF-8" filtered="true">
-            <directory>src/test/resources</directory>
+            <directory>app/src/test/resources</directory>
             <includes>
                 <include>**/*.properties</include>
                 <include>**/*.yaml</include>
@@ -72,17 +70,40 @@
             </includes>
         </fileSet>
 
-        <fileSet encoding="UTF-8">
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>app</directory>
+            <includes>
+                <include>pom.xml</include>
+            </includes>
+        </fileSet>
+
+        <!-- ═══ Modulo contract: el OpenAPI y, mas adelante, los clientes generados ═════════ -->
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>contract</directory>
+            <includes>
+                <include>pom.xml</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true" preserve-empty-dirs="true">
+            <directory>contract/src/main/resources</directory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+
+        <!-- ═══ Raiz del proyecto ══════════════════════════════════════════════════════════ -->
+
+        <!-- Sin filtrar: no llevan placeholders, y algunos (mvnw) romperian al pasar por Velocity -->
+        <fileSet encoding="UTF-8" filtered="false">
             <directory></directory>
             <includes>
                 <include>compose.yml</include>
-<!--                <include>Dockerfile</include>-->
                 <include>mvnw</include>
                 <include>mvnw.cmd</include>
                 <include>.gitignore</include>
-                <include>__gitignore</include>
                 <include>.dockerignore</include>
-                <include>liquibase.sh</include>
             </includes>
         </fileSet>
 
@@ -99,55 +120,36 @@
             </includes>
         </fileSet>
 
-        <fileSet filtered="false" packaged="false">
-            <directory>.devcontainer/base</directory>
+        <!--
+          .mvn/ : el maven.config (defecto de ${revision}, imprescindible para `mvn -pl`) y las properties
+          del wrapper. Sin esto, `mvnw` se copiaba SIN su configuracion y no funcionaba.
+        -->
+        <fileSet encoding="UTF-8" filtered="false">
+            <directory>.mvn</directory>
+            <includes>
+                <include>**/*</include>
+            </includes>
         </fileSet>
 
-<!--        TODO -->
-<!--        <fileSet encoding="UTF-8" filtered="true">-->
-<!--            <directory>k8s</directory>-->
-<!--            <includes>-->
-<!--                <include>deployment.yaml</include>-->
-<!--                <include>service.yaml</include>-->
-<!--                <include>configmap.yaml</include>-->
-<!--                <include>secret.yaml</include>-->
-<!--                <include>ingress.yaml</include>-->
-<!--                <include>postgres-deployment.yaml</include>-->
-<!--                <include>redis-deployment.yaml</include>-->
-<!--                <include>README.md</include>-->
-<!--            </includes>-->
-<!--        </fileSet>-->
+        <fileSet filtered="false" packaged="false">
+            <directory>docker</directory>
+        </fileSet>
 
-<!--        <fileSet encoding="UTF-8" filtered="true">-->
-<!--            <directory>k8s/dev</directory>-->
-<!--            <includes>-->
-<!--                <include>kustomization.yaml</include>-->
-<!--            </includes>-->
-<!--        </fileSet>-->
+        <fileSet filtered="false" packaged="false">
+            <directory>.devcontainer</directory>
+        </fileSet>
 
-<!--        <fileSet encoding="UTF-8" filtered="true">-->
-<!--            <directory>k8s/test</directory>-->
-<!--            <includes>-->
-<!--                <include>kustomization.yaml</include>-->
-<!--            </includes>-->
-<!--        </fileSet>-->
-
-<!--        <fileSet encoding="UTF-8" filtered="true">-->
-<!--            <directory>k8s/staging</directory>-->
-<!--            <includes>-->
-<!--                <include>kustomization.yaml</include>-->
-<!--                <include>hpa.yaml</include>-->
-<!--            </includes>-->
-<!--        </fileSet>-->
-
-<!--        <fileSet encoding="UTF-8" filtered="true">-->
-<!--            <directory>k8s/prod</directory>-->
-<!--            <includes>-->
-<!--                <include>kustomization.yaml</include>-->
-<!--                <include>hpa.yaml</include>-->
-<!--                <include>pdb.yaml</include>-->
-<!--            </includes>-->
-<!--        </fileSet>-->
+        <!-- ═══ Kubernetes ═════════════════════════════════════════════════════════════════
+             Se generan de verdad. Antes estaban comentados mientras skaffold.yaml SI se generaba,
+             asi que el proyecto nacia con un skaffold apuntando a ficheros que no existian.
+        -->
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>k8s</directory>
+            <includes>
+                <include>**/*.yaml</include>
+                <include>**/*.md</include>
+            </includes>
+        </fileSet>
 
     </fileSets>
 

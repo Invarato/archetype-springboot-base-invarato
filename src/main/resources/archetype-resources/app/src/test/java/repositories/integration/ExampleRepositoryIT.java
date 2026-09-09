@@ -1,8 +1,8 @@
 package ${groupId}.repositories.integration;
 
 import ${groupId}.entities.MyTable;
-{groupId}.repositories.MyTableRepository;
-{groupId}.repositories.integration.common.BaseRepositoryIT;
+import ${groupId}.repositories.MyTableRepository;
+import ${groupId}.repositories.integration.common.BaseRepositoryIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

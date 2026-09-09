@@ -1,12 +1,12 @@
 package ${groupId}.services.integration;
 
 
-{groupId}.dtos.requests.MyTableRequest;
+import ${groupId}.dtos.requests.MyTableRequest;
 import ${groupId}.dtos.responses.MyTableResponse;
-{groupId}.entities.MyTable;
-{groupId}.repositories.MyTableRepository;
-{groupId}.services.ExampleService;
-{groupId}.services.integration.common.BaseServiceIT;
+import ${groupId}.entities.MyTable;
+import ${groupId}.repositories.MyTableRepository;
+import ${groupId}.services.ExampleService;
+import ${groupId}.services.integration.common.BaseServiceIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;

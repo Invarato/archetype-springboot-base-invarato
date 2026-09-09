@@ -6,6 +6,7 @@ import ${groupId}.dtos.responses.MyTableResponse;
 import ${groupId}.entities.MyTable;
 import ${groupId}.mappers.common.BaseMapperConfig;
 import org.mapstruct.BeanMapping;
+import org.mapstruct.InheritConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

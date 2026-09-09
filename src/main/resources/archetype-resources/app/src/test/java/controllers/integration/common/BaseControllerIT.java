@@ -3,7 +3,7 @@ package ${groupId}.controllers.integration.common;
 
 import lombok.extern.slf4j.Slf4j;
 import ${groupId}.common.ConfigTestContainersTest;
-{groupId}.common.UtilsTest;
+import ${groupId}.common.UtilsTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;

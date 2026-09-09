@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      POM PADRE (agregador). Aqui NO hay codigo: solo la version, las versiones de las dependencias y los
+      plugins que comparten todos los modulos.
+
+      Por que multi-modulo teniendo un solo servicio: el sitio donde viven el contrato OpenAPI y los clientes
+      generados (Java, Python, stubs). Montarlo al generar cuesta un pom y un nivel de carpeta; hacerlo
+      despues es un refactor que toca Dockerfile, compose, k8s, skaffold y CI a la vez.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.2</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>${groupId}</groupId>
+    <artifactId>${artifactId}</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+
+    <name>${artifactId}</name>
+    <description>descripcion ${artifactId}</description>
+
+    <modules>
+        <!-- contract va PRIMERO: app puede depender de el (clientes/stubs generados), nunca al reves. -->
+        <module>contract</module>
+        <module>app</module>
+    </modules>
+
+    <properties>
+        <!--
+          Version de TODO el reactor. Se sobreescribe desde el build con -Drevision=X.Y.Z (CI la saca del
+          tag de git). El valor de aqui es solo el defecto para builds locales.
+
+          ⚠️ Este mismo valor esta repetido en .mvn/maven.config, y NO es redundante: para resolver el
+          <parent> de un modulo hijo, Maven necesita la version ANTES de haber leido las propiedades del
+          padre. Sin maven.config, `mvn -pl app ...` falla al no poder resolver ${revision}.
+        -->
+        <revision>0.0.0-SNAPSHOT</revision>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>25</java.version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+
+        <spring-cloud.version>2025.1.0</spring-cloud.version>
+        <springdoc-openapi.version>3.0.1</springdoc-openapi.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+
+        <flatten-maven-plugin.version>1.8.0</flatten-maven-plugin.version>
+
+        <maven.build.timestamp.format>yyyy_MM_dd_HH_mm_ss</maven.build.timestamp.format>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <!--
+              flatten-maven-plugin: OBLIGATORIO al usar ${revision}.
+
+              Maven resuelve ${revision} mientras construye, pero el pom que se INSTALA o se PUBLICA
+              conserva el literal `${revision}` y quien consuma el artefacto no puede resolverlo. flatten
+              escribe un pom con la version ya resuelta y le dice a Maven que publique ESE.
+
+              `resolveCiFriendliesOnly` = toca solo revision/sha1/changelist y deja el resto del pom igual.
+              `updatePomFile` = usa el pom aplanado para este proyecto (sin esto se genera bien y se publica
+              el original, que es el fallo silencioso clasico).
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>${flatten-maven-plugin.version}</version>
+                <configuration>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                    <updatePomFile>true</updatePomFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
