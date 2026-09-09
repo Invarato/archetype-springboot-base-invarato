@@ -1,0 +1,69 @@
+# Publicacion en Maven Central, disparada por un TAG.
+#
+# Antes esto se hacia a mano: subir la version en el pom, commitear, `mvn central-publishing:publish`
+# desde el portatil, con la clave GPG personal. Tres problemas que no se ven hasta que muerden:
+#   - la version se pone a mano, asi que se puede publicar con la anterior sin enterarse;
+#   - se publica desde una maquina cuyo estado nadie conoce (¿estaba el arbol limpio? ¿pasaban los tests?);
+#   - la clave de firma vive en un portatil.
+#
+# Aqui: se empuja un tag `v2.0.0` y CI se encarga. La version sale del TAG, no de un fichero, asi que no
+# puede desalinearse. Y **no se publica nada que no haya pasado el gate**.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # La version es el tag sin la `v`: v2.0.0 -> 2.0.0. Se valida la forma para no publicar por error
+      # algo como `v2.0.0-pruebas` — en Maven Central una version publicada NO se puede borrar ni
+      # reemplazar, asi que aqui no hay segunda oportunidad.
+      - name: Sacar la version del tag
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::El tag '$GITHUB_REF_NAME' no es vX.Y.Z. Central no permite deshacer una publicacion."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: JDK 25 (LTS)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          # Importa la clave de firma y prepara ~/.m2/settings.xml con el servidor de Central: asi no
+          # hay que mantener un settings.xml a mano ni dejar la clave en ningun sitio del repo.
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
+          server-id: central
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_PASSWORD
+
+      # ⚠️ EL GATE, ANTES de publicar y con la version definitiva. Publicar sin esto es como se han
+      # publicado historicamente arquetipos que generaban proyectos que no compilaban: el build del
+      # arquetipo solo empaqueta ficheros de texto y da BUILD SUCCESS igualmente.
+      - name: Comprobar que el arquetipo genera algo que funciona
+        run: make verify OUT_DIR="${{ runner.temp }}/generated" ARCHETYPE_VERSION="${{ steps.version.outputs.version }}"
+        env:
+          MAVEN_ARGS: -Drevision=${{ steps.version.outputs.version }}
+
+      - name: Publicar en Maven Central
+        run: mvn -B -Drevision="${{ steps.version.outputs.version }}" clean deploy -DskipTests
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

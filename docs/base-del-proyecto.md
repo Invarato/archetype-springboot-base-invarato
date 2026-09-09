@@ -382,4 +382,24 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
       La pregunta abierta no es cómo mejorarlos, es **quitarlos o hacerlos reales**: andamio que nadie
       ejercita se pudre. Skaffold se usa en otros proyectos con minikube; hay que mirar si sigue siendo la
       opción recomendable hoy antes de decidir.
+- [ ] **Autoconfiguración para el cliente Java.** Hoy `client-java` es código generado en crudo: quien lo
+      use tiene que instanciar el `ApiClient`, ponerle la URL base y cablear el token a mano, en cada
+      proyecto consumidor. Con un `@AutoConfiguration` + `@ConfigurationProperties` dentro del módulo,
+      consumirlo sería añadir la dependencia y poner dos propiedades. **Es lo que separa "te damos un
+      cliente generado" de "te damos un cliente que se usa solo"**, y es el mayor salto de comodidad que
+      le queda al módulo.
+- [ ] **Indicador de salud del cliente.** Que el cliente aporte un `HealthIndicator`, para que el
+      servicio que lo consume vea en su propio `/actuator/health` si su dependencia responde. Sin eso, un
+      consumidor se entera de que el servicio del que depende está caído cuando le falla una petición de
+      usuario.
+- [ ] **Módulo de ejemplo ejecutable (`sandbox`).** Un microservicio mínimo que consuma el cliente
+      generado. Sirve de documentación viva y, sobre todo, **ejercita el cliente**: hoy comprobamos que
+      se genera y compila, no que se pueda usar de verdad.
+- [ ] **`@Version` para bloqueo optimista.** El manejador de errores ya traduce
+      `ObjectOptimisticLockingFailureException` a un 409, pero ninguna entidad de ejemplo lo usa: la rama
+      está escrita y no se ejercita nunca. Una entidad base con `@Version` cerraría el círculo.
+- [ ] **Pruebas de carga.** Un `docker/k6/` con un par de escenarios. Valor real solo si se ejercitan; si
+      no, es andamio (ver el criterio nº2 de este documento).
+- [ ] **Imagen nativa (GraalVM).** Arranque en milisegundos y mucha menos memoria, que en Kubernetes se
+      nota en la factura. Cuesta un `compose` aparte y disciplina con la reflexión.
 - [ ] **Parent POM publicado** (D4), ya en segunda fase.

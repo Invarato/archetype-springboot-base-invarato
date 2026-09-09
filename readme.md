@@ -1,177 +1,135 @@
 # Maven Archetype: Spring Boot Base (Invarato)
 
-[![Maven Repository](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fjarroba%2Farchetype-springboot-base-invarato%2Fmaven-metadata.xml&style=flat-square)](https://mvnrepository.com/artifact/com.jarroba/archetype-springboot-base-invarato)
+[![verify](https://github.com/Invarato/archetype-springboot-base-invarato/actions/workflows/verify.yml/badge.svg)](https://github.com/Invarato/archetype-springboot-base-invarato/actions/workflows/verify.yml)
+[![Maven Central](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fjarroba%2Farchetype-springboot-base-invarato%2Fmaven-metadata.xml&style=flat-square&label=Maven%20Central)](https://central.sonatype.com/artifact/com.jarroba/archetype-springboot-base-invarato)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-1.0.2-blue?style=flat-square)](https://central.sonatype.org/artifact/com.jarroba/archetype-springboot-base-invarato)
+Arquetipo Maven para arrancar **microservicios Spring Boot** que funcionan desde el primer `make run`:
+listos para contenedor y Kubernetes, con seguridad puesta, migraciones, contrato OpenAPI y clientes
+generados.
 
-Arquetipo de Maven para crear proyectos base de Spring Boot listos para producción, con capas de controlador/servicio/repositorio, mapeos, manejo global de excepciones, integración con Liquibase, pruebas unitarias e integración con Testcontainers y configuración Docker/Compose opcional.
+La promesa es concreta: **lo generado compila, pasa sus tests y arranca a la primera**. Y no es una
+declaración de intenciones — hay un gate automático que lo comprueba en cada cambio (ver más abajo).
 
-Repositorio: https://github.com/Invarato/archetype-springboot-base-invarato
+---
 
-
-## Requisitos mínimos
-- JDK 25
-- Maven 3.6.3+
-- Docker 27+ (solo si vas a usar Testcontainers con Docker o levantar servicios con Compose)
-
-
-## Cómo usar el arquetipo
-Genera un proyecto nuevo a partir del arquetipo publicado:
+## Crear un proyecto
 
 ```shell
 mvn archetype:generate \
   -DarchetypeGroupId=com.jarroba \
   -DarchetypeArtifactId=archetype-springboot-base-invarato \
-  -DarchetypeVersion=<version-publicada> \
-  -DgroupId=<tu.grupo> \
-  -DartifactId=<tu-artifactId>
-```
-
-Parámetros principales:
-- archetypeGroupId: com.jarroba
-- archetypeArtifactId: archetype-springboot-base-invarato
-- archetypeVersion: versión publicada en Maven Central (consulta el portal)
-- groupId: grupo para tu nuevo proyecto
-- artifactId: nombre de tu nuevo proyecto
-
-Ejemplo local (SNAPSHOT):
-```shell
-# Limpia repositorio local de SNAPSHOT, recompila el arquetipo e instálalo
-rm -r ~/.m2/repository/com/jarroba/archetype-springboot-base-invarato/1.0.0-SNAPSHOT || true
-mvn clean install
-
-# Genera un proyecto desde el SNAPSHOT local
-mvn archetype:generate \
-  -DarchetypeGroupId=com.jarroba \
-  -DarchetypeArtifactId=archetype-springboot-base-invarato \
-  -DarchetypeVersion=1.0.0-SNAPSHOT \
-  -DgroupId=mi.dominio \
-  -DartifactId=mi-proyecto
-```
-
-
-## Estructura del arquetipo
-El arquetipo empaqueta una plantilla de proyecto Spring Boot con:
-- Controladores de ejemplo e interceptores de errores
-- Servicios, repositorios y entidades base
-- DTOs y mapeadores con MapStruct
-- Migraciones con Liquibase
-- Tests unitarios e integración (JUnit + Testcontainers)
-- Dockerfile y archivos docker-compose opcionales
-
-Al generar el proyecto final, todo el contenido de la plantilla sustituye variables Maven (por ejemplo ${groupId}, ${artifactId}) y queda como un proyecto normal, independiente del arquetipo.
-
-
-## Notas sobre los readme de la plantilla
-Dentro de la carpeta del arquetipo encontrarás un readme.md de la PLANTILLA con cabeceras escapadas para que Maven no elimine caracteres durante la generación. Verás marcas como:
-- #[[#]]# ${artifactId}
-- #[[##]]# Sección
-
-Es totalmente intencional. Cuando generes el proyecto final, esas marcas se transforman en cabeceras Markdown correctas (H1/H2) conservando los placeholders ya sustituidos.
-
-
-## Publicar en Maven Central (para mantenedores)
-Este proyecto usa el Central Publishing Plugin de Sonatype. Pasos resumidos:
-
-1) Genera tu token en el portal
-- https://central.sonatype.org/publish/generate-portal-token/
-
-2) Configura tus credenciales en ~/.m2/settings.xml
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
-  <servers>
-    <server>
-      <id>central</id>
-      <username>your-sonatype-username</username>
-      <password>your-portal-token</password>
-    </server>
-  </servers>
-
-
-  <profiles>
-      <profile>
-          <id>ossrh</id>
-          <properties>
-              <gpg.executable>gpg</gpg.executable>
-              <!-- Contrasena GPG con la que firmar los artefactos -->
-              <gpg.passphrase>SU_CONTRASEÑA_GPG</gpg.passphrase>
-          </properties>
-      </profile>
-  </profiles>
-    
-    
-    
-</settings>
-```
-
-3) Crear claves GPG (con linux)
-https://central.sonatype.org/publish/requirements/gpg/
-````shell
-gpg --version
-# Generating a Key Pair
-gpg --gen-key
-# Listar claves para obtener el ID.
-gpg --list-keys
-# Ejemplo de salida:
-# pub   rsa3072 2024-02-13 [SC] [expires: 2026-02-12]
-#       AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555  # Este es el ID completo
-# uid           [ultimate] Su Nombre <su.email@ejemplo.com>
-# sub   rsa3072 2024-02-13 [E] [expires: 2026-02-12]
-
-# Enviar clave a keyserver.ubuntu.com
-
-# Enviar clave los servidores
-#gpg --keyserver keyserver.ubuntu.com --send-keys AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555
-#gpg --keyserver keys.openpgp.org --send-keys AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555
-#gpg --keyserver pgp.mit.edu --send-keys AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555
-
-# O Enviar clave a varios keyservers compatibles
-KEY_ID="AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555" && for server in keyserver.ubuntu.com keys.openpgp.org pgp.mit.edu; do gpg --keyserver "$server" --send-keys "$KEY_ID"; done
-
-````
-
-
-4) Compila y publica (con linux). Si pide contraseña es la que configuraste en ~/.m2/settings.xml en <gpg.passphrase>
-```shell
-#mvn clean install
-#mvn central-publishing:publish
-#mvn clean install central-publishing:publish
-#mvn clean install central-publishing:publish -Darchetype.jar.included
-mvn clean install central-publishing:publish
-```
-
-5) Descargar
-Última versión:
-   [![Latest Version](https://img.shields.io/badge/Latest-1.0.2-blue?style=flat-square)](https://mvnrepository.com/artifact/com.jarroba/archetype-springboot-base-invarato)
-
-Con comando
-````shell
-mvn archetype:generate \
-  -DarchetypeGroupId=com.jarroba \
-  -DarchetypeArtifactId=archetype-springboot-base-invarato \
-  -DarchetypeVersion=1.0.2 \
+  -DarchetypeVersion=2.0.0 \
   -DgroupId=com.ejemplo \
-  -DartifactId=mi-proyecto \
-  -Dversion=1.0.0
-````
+  -DartifactId=mi-servicio
+```
 
-Desde web busque `com.jarroba archetype-springboot-base-invarato` en:
- * Maven Central (propagación inmediata): https://search.maven.org/
- * MVNRepository (tarda en propagar): https://mvnrepository.com/
- * Maven Repository Search (tarda en propagar): https://repository.sonatype.org/
+Y a trabajar:
 
+```shell
+cd mi-servicio
+make help          # todo lo que puedes hacer
+make run           # levanta Postgres/Redis y arranca la API en el 8080
+make token         # un JWT de desarrollo para llamar a la API
+make verify        # tests unitarios + integración (Testcontainers)
+```
 
-Notas:
-- (No logrado) No es necesario firmar artefactos con GPG cuando usas el portal de Sonatype con el plugin central-publishing.
-- Asegúrate de que el POM contenga: name, description, url, licenses, developers y scm (ya configurados).
+**Requisitos:** JDK 25 y Docker. Maven no hace falta: el proyecto trae wrapper.
 
+---
 
-## Contribuir
-- Issues y PRs bienvenidos. Sigue la estructura existente y añade pruebas cuando modifiques el arquetipo.
+## Qué genera
+
+Un reactor multi-módulo, aunque de momento solo haya un servicio — porque el contrato y los clientes
+necesitan un sitio, y montarlo después es un refactor que toca Dockerfile, compose, k8s y CI a la vez:
+
+```
+mi-servicio/
+├── app/              el microservicio
+├── contract/         el contrato OpenAPI, versionado y empaquetado
+├── client-java/      cliente Java generado del contrato
+├── client-python/    cliente Python generado del contrato
+├── compose-app.yml · Dockerfile · k8s/ · .devcontainer/
+```
+
+### Lo que trae dentro
+
+| | |
+|---|---|
+| **Java 25 (LTS)** · **Spring Boot 4.1** | Ni por debajo ni por encima: 26 no es LTS y su ventana de soporte se cierra enseguida. |
+| **Seguridad siempre activa** | Una sola cadena de filtros, *stateless*, con JWT (OAuth2 Resource Server). **No hay perfil que la apague**, tampoco en los tests. Lo que cambia entre entornos no son las reglas, es de dónde salen los tokens. |
+| **Migraciones con Flyway** | `make db-baseline` genera el `V1__init.sql` desde tus entidades JPA, sin necesitar base de datos. A partir de ahí manda Flyway, y `ddl-auto: validate` hace de detector de deriva: si olvidas una migración, la aplicación no arranca. |
+| **Contrato OpenAPI *code-first*** | Escribes Java y el contrato cae solo. Un test lo compara con el fichero versionado: **ningún cambio de contrato pasa inadvertido**. |
+| **Clientes generados** | Java (con `RestClient`) y Python, desde el contrato. Sin compartir los DTOs del servidor, que ataría al consumidor a tu versión de Boot. |
+| **Tests de arquitectura** | ArchUnit impone la estructura que el arquetipo enseña: capas, nombres, inyección por constructor y *nunca* entidades en los controladores. |
+| **Observabilidad** | `/actuator/prometheus`, logs en JSON fuera de local, y `traceId`/`spanId` correlacionados — más la cabecera `X-Trace-Id` en cada respuesta. |
+| **Errores en `ProblemDetail`** | RFC 9457, con los errores de validación campo a campo. |
+| **Testcontainers** | Los tests de integración levantan su propio Postgres, aparte del de desarrollo. |
+| **Devcontainer** | Con Docker dentro, para poder correr los tests de integración desde el minuto cero. |
+
+---
+
+## Cómo se garantiza que funciona
+
+El fallo clásico de un arquetipo es silencioso: `mvn install` da `BUILD SUCCESS` porque solo empaqueta
+ficheros de texto — **no los compila**. Se puede publicar un arquetipo que genere un proyecto roto sin que
+nada avise.
+
+Por eso aquí el gate no es el build del arquetipo, sino:
+
+```shell
+make verify    # instala el arquetipo → genera un proyecto → lo compila, comprueba y pasa sus tests
+```
+
+Incluye ocho comprobaciones estructurales que el compilador no puede ver, y **cada una viene de un fallo
+real**: placeholders sin sustituir, documentación que perdió líneas al filtrarse, un `devcontainer.json`
+que no parsea, el wrapper sin permisos de ejecución, manifiestos referenciados que no existen, o una
+entidad publicada en el contrato.
+
+Corre en CI en cada push, en cada PR y una vez por semana — esto último porque las versiones las gestiona
+el BOM de Spring Boot y el build puede romperse sin que nadie toque el repo.
+
+---
+
+## Documentación
+
+- **[docs/base-del-proyecto.md](docs/base-del-proyecto.md)** — qué se decidió, **por qué**, y qué reabriría
+  cada decisión. Además de los tropiezos ya pagados, para no repetirlos.
+- **[docs/flujo-de-trabajo.md](docs/flujo-de-trabajo.md)** — el gate y qué caza cada comprobación.
+- **[docs/migraciones.md](docs/migraciones.md)** — cómo nace y evoluciona el esquema.
+
+El proyecto generado trae su propio `readme.md` y su `make help`.
+
+---
+
+## Desarrollo del arquetipo
+
+```shell
+make help        # objetivos y variables
+make rebuild     # clean + build + generate (ciclo rápido mientras editas)
+make verify      # EL GATE
+```
+
+⚠️ **No te fíes del `BUILD SUCCESS` del arquetipo.** El único verde que cuenta es el del proyecto generado.
+
+Detalle que despista: dentro de `src/main/resources/archetype-resources/` todo es *plantilla*. No compila
+por sí sola —lleva `${groupId}` y `${artifactId}` sin resolver— y pasa por Velocity al generarse, así que
+`##` y `${VAR:defecto}` necesitan escaparse. Está explicado en `docs/`.
+
+## Publicar una versión
+
+Se empuja un tag y CI se encarga:
+
+```shell
+git tag v2.0.0 && git push origin v2.0.0
+```
+
+La versión sale **del tag**, no de un fichero, así que no puede desalinearse. Y el workflow **pasa el gate
+antes de publicar**: en Maven Central una versión publicada no se puede borrar ni reemplazar.
+
+Requiere estos secretos en el repositorio: `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD` (token del
+portal de Sonatype), `GPG_PRIVATE_KEY` y `GPG_PASSPHRASE`.
 
 ## Licencia
-- MIT License. Ver sección de licencias en el POM o el archivo LICENSE del repositorio.
+
+MIT. Ver [LICENSE](LICENSE).

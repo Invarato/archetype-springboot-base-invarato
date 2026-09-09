@@ -10,7 +10,7 @@
       riesgo clasico de publicar con la version anterior porque nadie la toco.
       Es el mismo mecanismo que el arquetipo enseña a sus proyectos (ver D3).
     -->
-    <version>${revision}</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>maven-archetype</packaging>
 
     <properties>
@@ -60,8 +60,8 @@
 
         <plugins>
             <!--
-              flatten: obligatorio al usar ${revision}. Sin el, el pom que se PUBLICA en Maven Central
-              conservaria el literal `${revision}` y `archetype:generate` no podria resolverlo — o sea,
+              flatten: obligatorio al usar 2.0.0-SNAPSHOT. Sin el, el pom que se PUBLICA en Maven Central
+              conservaria el literal `2.0.0-SNAPSHOT` y `archetype:generate` no podria resolverlo — o sea,
               el arquetipo se publicaria roto y no habria forma de arreglarlo sin sacar otra version
               (Central no permite reemplazar una publicada).
             -->

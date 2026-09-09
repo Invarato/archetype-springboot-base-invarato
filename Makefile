@@ -27,7 +27,9 @@ M2_REPOSITORY_PATH := $(HOME)/.m2/repository
 # primer <version> son los del proyecto. Si algun dia se le anade un padre, esto habria que cambiarlo.
 ARCHETYPE_GROUP_ID := $(shell grep -m1 "<groupId>" $(POM_XML_PATH) | sed -E 's/.*<groupId>([^<]+)<\/groupId>.*/\1/')
 ARCHETYPE_ARTIFACT_ID := $(shell grep -m1 "<artifactId>" $(POM_XML_PATH) | sed -E 's/.*<artifactId>([^<]+)<\/artifactId>.*/\1/')
-DEFAULT_ARCHETYPE_VERSION := $(shell grep -m1 "<version>" $(POM_XML_PATH) | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')
+# ⚠️ Se lee la propiedad <revision>, NO el <version>: desde que la version es CI-friendly, el <version>
+# del pom es el literal `${revision}` y un grep sobre el devolvia eso mismo.
+DEFAULT_ARCHETYPE_VERSION := $(shell grep -m1 "<revision>" $(POM_XML_PATH) | sed -E 's/.*<revision>([^<]+)<\/revision>.*/\1/')
 
 ARCHETYPE_VERSION ?= $(DEFAULT_ARCHETYPE_VERSION)
 ARTIFACT_ID ?= projectTestForAnalysis
