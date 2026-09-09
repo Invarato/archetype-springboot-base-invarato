@@ -52,8 +52,8 @@ que se trae su propio compose.
 
 ## Dónde cae el proyecto generado
 
-`make generate` (y `restart_build.bash`) escriben el proyecto en el **directorio padre** del repo
-(`dirname $PWD`). Por eso el repo **no** se monta en `/workspace`, sino un nivel por debajo:
+`make generate` escribe el proyecto (`dirname $PWD`, configurable con `OUT_DIR`) en el **directorio
+padre** del repo. Por eso el repo **no** se monta en `/workspace`, sino un nivel por debajo:
 
 ```
 /workspace/

@@ -37,7 +37,7 @@
   "remoteUser": "vscode",
 
   // ⚠️ El repo NO se monta en /workspace, sino un nivel por debajo. Es deliberado y es la pieza clave:
-  // `make generate` (y restart_build.bash) escriben el proyecto generado en `dirname $PWD`. Con el repo
+  // `make generate` escribe el proyecto generado en `dirname $PWD` (variable OUT_DIR). Con el repo
   // en /workspace ese padre seria `/` y la generacion fallaria; asi aterriza en
   // /workspace/projectTestForAnalysis, al lado del repo y visible en el explorador del IDE.
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/${localWorkspaceFolderBasename},type=bind,consistency=cached",

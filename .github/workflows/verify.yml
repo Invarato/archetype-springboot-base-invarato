@@ -1,0 +1,65 @@
+# El gate del arquetipo, automatizado.
+#
+# Por que existe: hasta ahora la unica forma de saber si el arquetipo producia algo que funciona era que
+# alguien se acordara de ejecutarlo a mano. Y el fallo tipico de este repo es silencioso — `mvn install`
+# da BUILD SUCCESS aunque el proyecto generado no compile, porque aqui solo se empaquetan ficheros de
+# texto. El arquetipo estuvo generando un proyecto roto sin que nadie lo viera.
+#
+# Lo que corre es exactamente `make verify`, el mismo comando que se usa en local: instalar el arquetipo,
+# generar un proyecto, pasarle las comprobaciones estructurales y hacerle `mvn verify` con Testcontainers.
+# Si el gate y el CI divergieran, el CI dejaria de significar nada.
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Para poder lanzarlo a mano desde la pestaña Actions.
+  workflow_dispatch:
+  # Semanal: aqui casi todas las versiones las gestiona el BOM de Spring Boot, asi que el build puede
+  # romperse sin que nadie toque el repo. Mejor enterarse un lunes que al ir a publicar.
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # El paso caro es el `mvn verify` del generado, que se baja imagenes y levanta Postgres.
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: JDK 25 (LTS)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          # Cachea ~/.m2 entre ejecuciones. Ojo: `make clean` borra de ahi el propio arquetipo a
+          # proposito, para que `archetype:generate` no pueda resolver una version vieja de la cache.
+          cache: maven
+
+      # ubuntu-latest ya trae Docker, que es lo que necesitan los *IT con Testcontainers. Se comprueba
+      # explicitamente para que, si algun dia deja de estar, el fallo lo diga en vez de aparecer como
+      # veinte tests rotos.
+      - name: Comprobar que hay Docker
+        run: docker version
+
+      - name: make verify
+        run: make verify OUT_DIR="${{ runner.temp }}/generated"
+
+      # Si algo falla, los logs de Maven del proyecto generado son lo primero que se mira, y no estan en
+      # el repo: viven en el directorio temporal del runner.
+      - name: Guardar los informes del proyecto generado
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-failsafe-reports
+          path: |
+            ${{ runner.temp }}/generated/**/target/surefire-reports/**
+            ${{ runner.temp }}/generated/**/target/failsafe-reports/**
+          retention-days: 7
+          if-no-files-found: ignore
