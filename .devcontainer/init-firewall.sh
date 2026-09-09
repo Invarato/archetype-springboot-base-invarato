@@ -18,9 +18,11 @@
 # ampliarla. Para anadir un dominio se edita este fichero y se hace "Rebuild Container" — a
 # proposito: el perimetro se decide fuera de la caja, no dentro.
 #
-# ⚠️ LIMITE HONESTO: en el perfil `with-docker` el contenedor es PRIVILEGIADO (lo exige
-# Docker-in-Docker) y ahi esto es un guardarrail, no una barrera: con privilegios se puede tirar el
-# firewall. La contencion real es el perfil por defecto (hardened, sin Docker y sin privilegios).
+# ⚠️ LIMITE HONESTO: el contenedor es PRIVILEGIADO (lo exige Docker-in-Docker, y sin Docker no se
+# pueden correr los tests del proyecto generado). Con privilegios, esto es un GUARDARRAIL, no una
+# barrera: desde dentro se puede desmontar. Sirve contra el fallo dominante —el despiste, traerse algo
+# de donde no toca— y no contra un agente hostil. La contencion real es la VM donde corre esto, el
+# alcance del token de `gh` y la revision del diff.
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -44,7 +46,7 @@ ALLOWED_DOMAINS=(
   # Claude Code: API, login y auto-update (downloads.claude.ai sale del propio instalador)
   anthropic.com
   claude.ai
-  # Registries de imagenes: los usa el Docker de dentro (perfil with-docker) para bajarse
+  # Registries de imagenes: los usa el Docker de dentro para bajarse
   # postgres/redis/eclipse-temurin de los tests y del compose del proyecto generado.
   docker.io
   docker.com                 # production.cloudflare.docker.com (las capas de las imagenes)
@@ -112,9 +114,9 @@ fi
 printf 'nameserver 127.0.0.1\noptions timeout:2 attempts:3\n' > /etc/resolv.conf
 
 # ── 3. Reglas ──────────────────────────────────────────────────────────────────────────────
-# Chains propias en vez de tocar las policies por defecto ni hacer `iptables -F`: en el perfil
-# with-docker, dockerd YA ha creado sus cadenas cuando esto se ejecuta, y un flush le deja a los
-# contenedores de dentro sin red (un fallo que luego parece "Testcontainers no arranca").
+# Chains propias en vez de tocar las policies por defecto ni hacer `iptables -F`: cuando esto se
+# ejecuta, dockerd YA ha creado sus cadenas, y un flush le deja a los contenedores de dentro sin red
+# (un fallo que luego parece "Testcontainers no arranca").
 for chain in CC-IN CC-OUT; do
   iptables -N "$chain" 2>/dev/null || iptables -F "$chain"
 done
@@ -150,7 +152,7 @@ iptables -A CC-IN -j DROP
 iptables -C OUTPUT -j CC-OUT 2>/dev/null || iptables -I OUTPUT 1 -j CC-OUT
 iptables -C INPUT  -j CC-IN  2>/dev/null || iptables -I INPUT  1 -j CC-IN
 
-# Trafico de los contenedores de dentro hacia fuera (perfil with-docker). DOCKER-USER es la cadena
+# Trafico de los contenedores de dentro hacia fuera. DOCKER-USER es la cadena
 # que dockerd deja libre para reglas de usuario y que evalua ANTES que las suyas; solo existe si
 # dockerd esta arriba.
 if iptables -L DOCKER-USER -n >/dev/null 2>&1; then

@@ -1,0 +1,94 @@
+{
+  // Entorno de desarrollo del microservicio. UN SOLO perfil, y con Docker dentro.
+  //
+  // Docker no es opcional aqui: el ciclo normal lo necesita para las DOS cosas que se hacen a diario.
+  //   - `make verify` -> los tests de integracion (*IT) levantan Postgres efimeros con Testcontainers.
+  //   - `make run`    -> `compose-app.yml` levanta el Postgres y el Redis de desarrollo.
+  // Un devcontainer sin Docker solo deja compilar, y eso no es poder trabajar.
+  //
+  // ⚠️ Docker-in-Docker exige `privileged` (lo pone la propia feature). Un contenedor privilegiado NO
+  // aisla del anfitrion. La frontera real no es el contenedor: es la maquina/VM donde vive esto. Si vas a
+  // dejar agentes trabajando solos, que sea en una VM que puedas tirar, con un token de git de alcance
+  // reducido, y revisando el diff.
+  //
+  // Formato JSONC: se admiten comentarios, pero las claves VAN ENTRECOMILLADAS (un `name:` suelto no
+  // parsea y el devcontainer no abre).
+  "name": "Spring Boot · dev",
+
+  // Base pelada + features, en vez de la imagen `devcontainers/java`: asi el JDK y Maven quedan
+  // declarados y versionados en un unico sitio, junto al resto.
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+
+  "features": {
+    // JDK 25 (LTS) — el mismo que fija el pom del proyecto.
+    //
+    // ⚠️ `jdkDistro: "tem"` (Temurin) y NO el "ms" por defecto: el build de Microsoft para 25 se publica
+    // en SDKMAN como `25.0.4+1-ms` y el regex del feature no admite el `+1`, asi que falla con
+    // "Version 25 not found" y una lista de versiones vacia. Temurin (`25.0.4-tem`) si encaja. Es el
+    // mismo OpenJDK 25.
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25",
+      "jdkDistro": "tem",
+      "installMaven": "true",
+      "mavenVersion": "latest"
+    },
+
+    // Docker DENTRO del contenedor, no el socket del anfitrion. Con docker-outside-of-docker los
+    // contenedores efimeros de los tests acabarian mezclados con los de trabajo real de la maquina, y
+    // ademas ese socket es root en el anfitrion.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // make (el flujo de trabajo del proyecto ES el Makefile) y jq (lo usa `make db-info`). La imagen base
+  // no trae ninguno de los dos. Via apt y no via una feature de terceros: una dependencia menos que se
+  // pueda mover bajo los pies.
+  "onCreateCommand": "sudo apt-get update && sudo apt-get install -y --no-install-recommends make jq && sudo rm -rf /var/lib/apt/lists/*",
+
+  // 8080 API · 5005 debug de la JVM · 5432 Postgres · 6379 Redis (los dos ultimos, de compose-app.yml)
+  "forwardPorts": [8080, 5005, 5432, 6379],
+  "portsAttributes": {
+    "8080": { "label": "API", "onAutoForward": "notify" },
+    "5005": { "label": "JVM debug", "onAutoForward": "silent" },
+    "5432": { "label": "Postgres", "onAutoForward": "silent" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" }
+  },
+
+  "mounts": [
+    // La cache de Maven. Sin esto, cada rebuild vuelve a descargarse medio Maven Central.
+    "source=${localWorkspaceFolderBasename}-m2,target=/home/vscode/.m2,type=volume",
+    // La sesion de `docker login`: sin ella cada rebuild tira de Docker Hub como anonimo, y ahi es donde
+    // aparece el "toomanyrequests" a mitad de un `make verify` — que no parece un problema de credenciales.
+    "source=${localWorkspaceFolderBasename}-docker,target=/home/vscode/.docker,type=volume"
+  ],
+
+  "containerEnv": {
+    "DOCKER_BUILDKIT": "1"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        "redhat.vscode-xml",
+        "ms-vscode.makefile-tools"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "files.exclude": { "**/target": true }
+      }
+    },
+    "jetbrains": {
+      "backend": "IntelliJ",
+      "plugins": ["com.intellij.database"]
+    }
+  },
+
+  // Comprobacion de que la caja esta completa. Si alguna de las tres falla, mejor saberlo ahora que a
+  // mitad del primer `make verify`.
+  "postCreateCommand": "java -version && mvn -version && docker version",
+
+  "remoteUser": "vscode"
+}

@@ -8,26 +8,35 @@ pasa los tests y arranca*.
 Está pensado para que **trabajen agentes de IA dentro**, así que la caja no es solo comodidad: hay un
 modelo de amenaza explícito, y está más abajo con sus límites dichos en voz alta.
 
-## Dos perfiles: elige al abrir
+## Un solo perfil, y con Docker
 
-VS Code pregunta cuál usar en *Reopen in Container* (JetBrains, lo mismo desde Gateway).
+Hubo dos perfiles: uno *hardened* sin Docker (el de por defecto, para los agentes) y otro
+*with-docker* privilegiado. **Se colapsaron en uno solo, con Docker**, y conviene saber por qué,
+porque es una decisión de seguridad revisada a la baja a propósito.
 
-| | **hardened** (por defecto) | **with-docker** |
-|---|---|---|
-| Fichero | `.devcontainer/devcontainer.json` | `.devcontainer/with-docker/devcontainer.json` |
-| Para | Los agentes. El día a día. | Tu sesión, cuando hace falta Docker o firmar. |
-| Docker dentro | ❌ | ✅ Docker-in-Docker |
-| Privilegios | `cap-drop=ALL` + 6 capabilities contadas | **`privileged`** (lo exige DinD) |
-| `sudo` | Solo `init-firewall.sh` | Completo |
-| Clave GPG | No montada | Montada |
-| ¿Contiene? | Sí, hasta donde llega un contenedor | **No.** Ver *Modelo de amenaza* |
+**El motivo:** sin Docker no se puede comprobar lo único que importa aquí. El proyecto generado
+necesita un demonio Docker para sus tests de integración (Testcontainers) y para su `compose-app.yml`.
+Un entorno donde solo se puede compilar deja el `mvn verify` sin correr — que es justo donde viven los
+fallos caros. Y el arquetipo se vende como *«descárgalo y trabaja con agentes»*: si la caja donde se
+desarrolla no puede correr Docker, esa promesa es falsa.
 
-Con el perfil por defecto se puede hacer casi todo: `make rebuild`, `make build`, `make generate`,
-editar, revisar, `git`, `gh`. Lo único que necesita el otro perfil es lo que necesita un demonio
-Docker: los tests con **Testcontainers**, el `compose-app.yml` del proyecto generado, y firmar una
-release con GPG.
+**Lo que se pierde, dicho claro:** Docker-in-Docker exige `privileged`, y un contenedor privilegiado
+**no aísla del anfitrión** (aquí, tu VM de WSL). Se miraron las alternativas y ninguna sale gratis hoy:
 
-## Qué trae la imagen (compartida por los dos perfiles)
+| Alternativa | Por qué no |
+|---|---|
+| **DinD rootless** | Issue **abierto** en la spec de devcontainers (#479): fallan las escrituras al bind mount salvo corriendo como root dentro. Sin receta verificada de extremo a extremo. |
+| **Podman rootless** | Obliga a `TESTCONTAINERS_RYUK_DISABLED=true` → adiós a la limpieza automática de contenedores. Más rarezas de red y de permisos del socket. |
+| **docker-outside-of-docker** | El socket del anfitrión **es root en el anfitrión**, y mezcla los contenedores efímeros de los tests con los de trabajo real. Peor, no mejor. |
+| **Testcontainers Cloud** | Sí evitaría el demonio local, pero es una dependencia externa y una cuenta de terceros. |
+
+**La conclusión que ordena todo lo demás:** el contenedor nunca fue la frontera real. El repo va
+montado en lectura/escritura y el token de `gh` vive dentro — con o sin privilegios. La contención de
+verdad es **dónde** corre esto (una VM que puedas tirar), **el alcance del token** y **tu revisión del
+diff**. Lo que sí se conserva es el **firewall de salida**, porque no detiene a un agente hostil pero
+sí detiene el fallo dominante: el despiste.
+
+## Qué trae la imagen
 
 | Pieza | Por qué |
 |---|---|
@@ -87,25 +96,26 @@ volumen. Y lo caro de esto no es la pérdida, es *cuándo* se descubre: nunca en
 sino al ir a mirar por qué el CI está rojo y no poder, o al ir a publicar con el tag ya empujado. Por
 eso están montados **todos de una vez** y no según vaya doliendo — cada tanda cuesta un rebuild.
 
-| Volumen | Ruta | Qué guarda | Perfil |
-|---|---|---|---|
-| `archetype-invarato-m2` | `~/.m2` | Caché de Maven **y** donde `mvn install` deja el arquetipo para que `archetype:generate` lo encuentre. También tu `settings.xml`. | ambos |
-| `archetype-invarato-claude` | `~/.claude` | Todo el estado de Claude Code (ver abajo). | ambos |
-| `archetype-invarato-worktrees` | `~/worktrees` | Los worktrees de los agentes. | ambos |
-| `archetype-invarato-gh` | `~/.config/gh` | Token de GitHub. | ambos |
-| `archetype-invarato-history` | `~/.commandhistory` | Historial de bash y zsh. | ambos |
-| `archetype-invarato-gnupg` | `~/.gnupg` | Clave de firma para Maven Central. | solo `with-docker` |
-| `archetype-invarato-ssh` | `~/.ssh` | Claves SSH. | solo `with-docker` |
-| `archetype-invarato-docker` | `~/.docker` | Sesión de `docker login` y estado de buildx. | solo `with-docker` |
+| Volumen | Ruta | Qué guarda |
+|---|---|---|
+| `archetype-invarato-m2` | `~/.m2` | Caché de Maven **y** donde `mvn install` deja el arquetipo para que `archetype:generate` lo encuentre. También tu `settings.xml`. |
+| `archetype-invarato-claude` | `~/.claude` | Todo el estado de Claude Code (ver abajo). |
+| `archetype-invarato-worktrees` | `~/worktrees` | Los worktrees de los agentes. |
+| `archetype-invarato-gh` | `~/.config/gh` | Token de GitHub. |
+| `archetype-invarato-history` | `~/.commandhistory` | Historial de bash y zsh. |
+| `archetype-invarato-gnupg` | `~/.gnupg` | Clave de firma para Maven Central. |
+| `archetype-invarato-ssh` | `~/.ssh` | Claves SSH. |
+| `archetype-invarato-docker` | `~/.docker` | Sesión de `docker login` y estado de buildx. |
 
 Los nombres son **fijos** y no llevan `${devcontainerId}` a propósito: ese id se deriva de las
-etiquetas que identifican al devcontainer (carpeta local + fichero de configuración), así que los dos
-perfiles acabarían con volúmenes distintos y cambiar de perfil te costaría la caché, la sesión y los
-worktrees. El precio: dos clones del repo en la misma máquina los comparten.
+etiquetas que identifican al devcontainer (carpeta local + fichero de configuración), así que cualquier
+cambio en la configuración te costaría la caché de Maven, la sesión de Claude y los worktrees. El
+precio de los nombres fijos: dos clones del repo en la misma máquina los comparten.
 
-**`~/.ssh` y `~/.gnupg` no están en el perfil de los agentes** por decisión, no por descuido: el
-remote de este repo es HTTPS y los agentes empujan con el token de `gh`, así que no necesitan ninguna
-de las dos. Si te falta una clave, es que estás en el perfil que toca no tenerla.
+⚠️ **`~/.ssh` y `~/.gnupg` están montados y al alcance de los agentes.** Cuando había dos perfiles,
+vivían solo en el tuyo; ahora que hay uno, la separación desapareció. Monta ahí **solo** la clave GPG
+de este proyecto —no tu llavero entero— y ten en cuenta que para el trabajo normal no hacen falta: el
+remote es HTTPS y se empuja con el token de `gh`.
 
 ⚠️ **La primera vez, el volumen nace vacío** — así que en *ese* rebuild se pierde igual todo lo que
 estás haciendo persistente. La persistencia empieza a partir de ahí. Es el malentendido más probable
@@ -122,7 +132,7 @@ git worktree prune                          # limpia registros huérfanos que qu
 # VOLUMEN, así que un token escrito en la línea de comandos sobrevive a los rebuilds ahí dentro.
 read -rs GH_TOKEN && echo "$GH_TOKEN" | gh auth login --with-token && unset GH_TOKEN
 gh auth status                              # queda guardado en el volumen ~/.config/gh
-# y en el perfil with-docker, si los usas:
+# y, si los usas:
 gpg --import clave-privada.asc
 chmod 700 ~/.ssh && chmod 600 ~/.ssh/<clave>
 docker login
@@ -133,8 +143,8 @@ Del siguiente rebuild en adelante, nada de esto hace falta.
 ### Lo que sigue sin sobrevivir (dicho también)
 
 - **Lo que instales a mano dentro del contenedor.** Regla: *volumen para lo que se genera, Dockerfile
-  para lo que se instala*. En el perfil hardened ni siquiera puedes instalar a mano — no es un
-  estorbo, es la regla hecha cumplir.
+  para lo que se instala*. Con `sudo` completo SÍ puedes instalar a mano, pero se perderá en el
+  siguiente rebuild: lo que deba quedarse va al `Dockerfile`.
 - **Borrar el volumen** (`docker volume rm archetype-invarato-gh`). Que es, precisamente, la forma
   limpia de sacar una credencial de aquí.
 - **El proyecto generado** en `/workspace/` — de usar y tirar, `make clean` lo borra en cada ciclo.
@@ -185,17 +195,19 @@ Lo que se pierde son las carpetas y, con ellas, lo que no esté commiteado.
 ## Modelo de amenaza (leer antes de dejar agentes solos)
 
 **De qué protege:** de un agente que se equivoca, que sigue instrucciones que le han colado en un
-fichero que leyó, o que se trae dependencias de donde no debe. Contra eso: la salida a internet va por
-allowlist, `sudo` no sirve para nada salvo levantar el firewall, y el conjunto de capabilities es el
-mínimo con el que la caja arranca.
+fichero que leyó, o que se trae dependencias de donde no debe. Contra eso queda una cosa, y es real:
+**la salida a internet va por allowlist**, así que un despiste no puede traerse ni mandar algo a
+cualquier sitio.
 
 **De qué NO protege:**
 
-- **El perfil `with-docker` es privilegiado.** Docker-in-Docker no existe sin eso. Un contenedor
-  privilegiado se sale al host —aquí, tu VM de WSL con todo tu `$HOME`— sin esfuerzo. Ahí el firewall
-  es un guardarraíl contra un despiste, no una barrera: desde dentro se puede desmontar. **Si vas a
-  dejar agentes trabajando solos, usa el perfil por defecto.** (La alternativa,
-  *docker-outside-of-docker*, es igual o peor: el socket del host es root en el host.)
+- **El contenedor es privilegiado.** Docker-in-Docker no existe sin eso, y sin Docker no se puede
+  comprobar el proyecto generado. Un contenedor privilegiado se sale al host —aquí, tu VM de WSL con
+  todo tu `$HOME`— sin esfuerzo, y el firewall se puede desmontar desde dentro: es un **guardarraíl
+  contra un despiste, no una barrera contra un agente hostil**.
+  **La consecuencia práctica:** si vas a dejar agentes trabajando solos, la contención no la pone esta
+  caja — ponla fuera: una **VM que puedas tirar**, un **token de alcance reducido** y **revisar el
+  diff**. Ver *Un solo perfil, y con Docker* arriba para las alternativas que se descartaron y por qué.
 - **El repo está montado en lectura/escritura.** Tiene que estarlo. Un agente puede cambiar cualquier
   fichero del repo, incluido este devcontainer — el control es tu revisión del diff, no el contenedor.
 - **El token de `gh` está a mano de los agentes.** Es lo que les permite abrir PRs. Usa un token
@@ -238,9 +250,10 @@ convierte el firewall en decoración.
 y claude.ai · Docker Hub y su CDN · la marketplace de VS Code y sus CDNs · Spring.
 **Comentado, por si usas IntelliJ:** `jetbrains.com`.
 
-### Las capabilities del perfil hardened, una por una
+### Nota histórica: las capabilities del antiguo perfil hardened
 
-Cada `--cap-add` está por un fallo concreto, no por si acaso:
+Ya **no aplica** (Docker-in-Docker corre privilegiado y no hay `cap-drop`), pero se deja anotado porque
+se pagó descubriéndolo y ahorraría el trabajo a quien algún día intente volver a una caja sin Docker:
 
 - `NET_ADMIN`, `NET_RAW` — iptables/ipset. Sin ellas el firewall no hace nada.
 - `SETUID`, `SETGID` — sin ellas `sudo` muere con *"unable to change to root gid"*: el bit setuid da
@@ -249,10 +262,8 @@ Cada `--cap-add` está por un fallo concreto, no por si acaso:
 - `KILL` — para reiniciar dnsmasq, que corre como `nobody`: root **sin** esta capability no puede
   señalar a un proceso de otro usuario. Sin ella el firewall fallaba en el **segundo** arranque del
   contenedor y el primero iba bien, que es como no enterarte hasta que ya confías en él.
-
-⚠️ **No** se usa `--security-opt=no-new-privileges`, aunque suene a lo correcto: bloquea el bit setuid
-y con él se lleva `sudo`, que es justo como se lanza el firewall. Sería hardening que desactiva el
-hardening.
+- **No** usar `--security-opt=no-new-privileges` aunque suene a lo correcto: bloquea el bit setuid y con
+  él se lleva `sudo`, que es justo como se lanza el firewall. Hardening que desactiva el hardening.
 
 ## Uso
 
@@ -262,7 +273,7 @@ make rebuild       # clean + build + generate  ← el ciclo normal
 make build         # solo mvn clean install (con -DskipTests -Dgpg.skip=true)
 make generate ARTIFACT_ID=miPrueba
 
-# probar el resultado (esto sí pide el perfil with-docker)
+# probar el resultado (Testcontainers usa el Docker de dentro)
 cd ../projectTestForAnalysis
 make test          # Testcontainers usa el Docker de dentro
 make run           # API en 8080, ya reenviado al host
@@ -270,10 +281,10 @@ make run           # API en 8080, ya reenviado al host
 
 ## Publicar una versión
 
-El día a día va con `-Dgpg.skip=true`. Para publicar, en el perfil **with-docker**:
+El día a día va con `-Dgpg.skip=true`. Para publicar:
 
 ```bash
-# ⚠️ Primero el rebuild al perfil with-docker, DESPUÉS importar: el volumen nace vacío y se monta
+# ⚠️ Primero el rebuild, DESPUÉS importar: el volumen nace vacío y se monta
 # encima de lo que hubiera, así que una clave importada antes del rebuild queda tapada.
 gpg --import clave-privada.asc          # una vez; queda en el volumen ~/.gnupg
 # ~/.m2/settings.xml con <server id="central"> y el perfil ossrh (gpg.passphrase)
@@ -286,9 +297,14 @@ en la que publicas.
 
 ## Cuando algo falla
 
-- **«No puedo `sudo apt-get install`»** — correcto, es el diseño del perfil hardened. Se añade la
-  herramienta al `Dockerfile` y se hace *Rebuild*: lo que hay en la caja se decide fuera de la caja.
-  (En `with-docker` tienes sudo completo.)
+- **Instalé algo con `apt-get` y tras el rebuild ya no está** — esperado: `$HOME` y el sistema de
+  ficheros del contenedor se rehacen en cada rebuild. Regla: *volumen para lo que se genera, `Dockerfile`
+  para lo que se instala*.
+- **`docker` no responde / `Cannot connect to the Docker daemon`** — dockerd arranca con el contenedor y
+  tarda un poco. Si persiste, mira el log de la feature; el firewall no lo bloquea (escribe en
+  `DOCKER-USER` y no hace `iptables -F`, justo para no dejar sin red a los contenedores de dentro).
+- **`toomanyrequests` de Docker Hub a mitad de un `make verify`** — no es un problema de credenciales
+  *aparente*, pero lo es: estás tirando como anónimo. `docker login` (queda en el volumen `~/.docker`).
 - **Una descarga se queda colgada** — probablemente sea el firewall. Compruébalo con
   `curl -v https://<host>` y, si el dominio es legítimo, añádelo a `ALLOWED_DOMAINS` y *Rebuild*.
 - **Una extensión del IDE no se instala** — mismo motivo. La marketplace y sus CDNs ya están en la
@@ -301,25 +317,28 @@ en la que publicas.
   `~/.config/gh/hosts.yml`). Si lo pegas en el **inicio de sesión de GitHub del IDE**, sustituyes la
   credencial que el IDE le reenvía a git y te quedas sin `fetch`/`push` con ese mismo *403: Write
   access not granted* — en un *fetch*, que es una lectura.
-- **`ssh` pide contraseña con una clave que acabas de pegar** (perfil `with-docker`) — son los
+- **`ssh` pide contraseña con una clave que acabas de pegar** — son los
   permisos, aunque no lo diga: el directorio necesita `700` y la clave `600`, o `ssh` la descarta en
   silencio. `chmod 600 ~/.ssh/<clave>` y compruébala con
   `ssh-keygen -y -f ~/.ssh/<clave> >/dev/null && echo válida`.
   ⚠️ Y el orden va al revés de lo que parece: **reconstruye primero y pega la clave después**. El
   volumen nace vacío y se monta *encima*; si reconstruyes con la clave ya puesta, el montaje la tapa.
-- **Tu uid en el host no es 1000** — el perfil hardened quita `CAP_CHOWN`, y el ajuste automático de
-  uid que hace Dev Containers podría fallar. Se arregla añadiendo `"updateRemoteUserUID": false` o
-  devolviendo `--cap-add=CHOWN`.
+- **Tu uid en el host no es 1000** — el ajuste automático de uid que hace Dev Containers puede dar
+  guerra con los volúmenes. Se arregla con `"updateRemoteUserUID": false`.
 - **Empezar de cero con las credenciales** — `docker volume rm archetype-invarato-gh`
   (y `-claude`, `-gnupg`, `-m2`, `-worktrees` según lo que quieras tirar).
 
 ## Notas
 
-- Los `.devcontainer/` que hay en `src/main/resources/archetype-resources/` (`base/` y `full/`) son **la
-  plantilla que se copia a los proyectos generados**. No tienen nada que ver con este; si tocas uno, no
-  esperes que cambie el otro.
-- Los dos `devcontainer.json` repiten `customizations` y `mounts` a mano: el formato no admite herencia
-  ni includes. Si tocas uno, mira si el cambio va también en el otro.
-- El pom de la plantilla lleva `${groupId}`/`${artifactId}` sin resolver, así que no es un pom válido
-  por sí solo: `archetype-resources/` está excluido del import de Java para que el IDE no lo marque en
+- ⚠️ **Hay DOS `.devcontainer/` en este repo y no tienen nada que ver.** Este es el de *trabajar sobre
+  el arquetipo*. El de `src/main/resources/archetype-resources/.devcontainer/` es **la plantilla que se
+  copia a los proyectos generados**. Tocar uno no cambia el otro. (Antes eran `base/` y `full/`; se
+  colapsaron en uno solo, también con Docker, porque el proyecto generado lo necesita para
+  Testcontainers y para su `compose-app.yml` — y porque ninguno de los dos era JSON válido: llevaban las
+  claves sin comillas, así que ese devcontainer nunca llegó a abrir.)
+- ⚠️ **`devcontainer.json` es JSONC: admite comentarios, pero las claves VAN ENTRECOMILLADAS.** Un
+  `name:` suelto no parsea y el devcontainer no abre. Comprobación barata:
+  `sed -E 's|^\s*//.*$||' devcontainer.json | jq empty`.
+- Los poms de la plantilla llevan `${groupId}`/`${artifactId}` sin resolver, así que no son poms válidos
+  por sí solos: `archetype-resources/` está excluido del import de Java para que el IDE no lo marque en
   error permanente.

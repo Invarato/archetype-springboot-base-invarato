@@ -4,9 +4,9 @@
 # `maven-archetype`). Por eso aqui no hay Postgres ni Redis ni MinIO — el proyecto generado
 # se trae su propio compose.
 #
-# Imagen COMPARTIDA por los dos perfiles (ver README):
-#   .devcontainer/devcontainer.json              → hardened, sin Docker (donde trabajan los agentes)
-#   .devcontainer/with-docker/devcontainer.json  → con Docker-in-Docker (privilegiado)
+# PERFIL UNICO, con Docker-in-Docker: sin Docker no se pueden correr los tests de integracion del
+# proyecto generado, que es lo unico que comprueba de verdad si el arquetipo funciona. El porque
+# completo (y que se pierde con ello) esta en devcontainer.json y en el README.
 #
 # Base bookworm pelada + el feature `java` (JDK 25 + Maven) en devcontainer.json, en vez de la
 # imagen `devcontainers/java:25`: asi el JDK y Maven quedan declarados y versionados en un solo
@@ -28,21 +28,16 @@ RUN apt-get update \
       make gnupg iptables ipset dnsmasq dnsutils jq \
  && rm -rf /var/lib/apt/lists/*
 
-# ── Contencion: sudo restringido ───────────────────────────────────────────────────────────
-# La imagen base le da a `vscode` sudo NOPASSWD para TODO. Con un agente dentro eso significa que
-# puede hacerse root y, entre otras cosas, tirar el firewall de un `iptables -F`. Aqui se sustituye
-# por un unico permiso: ejecutar el script del firewall (root-only, no editable por vscode).
+# ── Sobre el sudo ──────────────────────────────────────────────────────────────────────────
+# `vscode` conserva el sudo NOPASSWD completo que trae la imagen base. Aqui hubo un mecanismo para
+# recortarlo a un unico permiso (lanzar el firewall), y se ha QUITADO a proposito: Docker-in-Docker
+# exige `privileged`, y en un contenedor privilegiado restringir sudo es teatro — se es root de todas
+# formas por otras vias. Un candado que no cierra pero estorba (no puedes `apt-get install`) es peor
+# que no tener candado, porque invita a confiar en el.
 #
-# ⚠️ Consecuencia practica: dentro del contenedor NO puedes `sudo apt-get install`. Para anadir una
-# herramienta se toca este Dockerfile y se hace Rebuild — que es justo la propiedad que se busca:
-# el contenido de la caja se decide fuera de la caja.
-# Para volver al sudo completo (perfil with-docker, que ya es privilegiado): RESTRICT_SUDO=false.
-ARG RESTRICT_SUDO=true
-RUN if [ "$RESTRICT_SUDO" = "true" ]; then \
-      rm -f /etc/sudoers.d/vscode /etc/sudoers.d/1000 ; \
-      echo 'vscode ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh' > /etc/sudoers.d/010-firewall ; \
-      chmod 0440 /etc/sudoers.d/010-firewall ; \
-    fi
+# La contencion real de este entorno NO es el contenedor: es la maquina/VM donde corre, el alcance del
+# token de `gh` y la revision del diff. El firewall de salida se mantiene porque si detiene el fallo
+# dominante, que es el despiste.
 
 COPY init-firewall.sh /usr/local/bin/init-firewall.sh
 # Root-owned y 0755: la allowlist vive DENTRO del script, asi que un agente no puede ampliarla sin

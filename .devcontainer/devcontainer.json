@@ -1,72 +1,59 @@
 {
-  // ═══ PERFIL POR DEFECTO: hardened (sin Docker) — es donde trabajan los agentes ═══════════
+  // ═══ Devcontainer de archetype-springboot-base-invarato — PERFIL UNICO, con Docker ═══════════
   //
-  // archetype-springboot-base-invarato es el ARQUETIPO Maven, no un proyecto Spring Boot. Lo que se
-  // hace aqui: `make rebuild` (compila el arquetipo, lo instala en ~/.m2 y genera un proyecto de
-  // prueba) y se revisa el resultado.
+  // Este repo NO es una app Spring Boot: es el ARQUETIPO Maven que las genera. El ciclo de trabajo es
+  //   `make rebuild` (compila el arquetipo, lo instala en ~/.m2 y genera un proyecto de prueba)
+  //   → y despues COMPROBAR ese proyecto generado.
   //
-  // Este perfil NO tiene Docker dentro, y esa es toda la idea: dar Docker a un contenedor exige
-  // privilegios (Docker-in-Docker) o el socket del host (docker-outside-of-docker), y las dos cosas
-  // equivalen a root en la maquina anfitriona — con lo cual el contenedor deja de contener nada. Sin
-  // Docker si se puede: capabilities al minimo y salida a internet por allowlist.
+  // ⚠️ Por que hay Docker aqui, habiendo habido antes un perfil "hardened" sin el:
+  // porque sin Docker no se puede comprobar lo unico que importa. El proyecto generado necesita Docker
+  // para sus tests de integracion (Testcontainers) y para su `compose-app.yml`. Un entorno donde solo se
+  // puede compilar deja el `mvn verify` sin correr, que es justo donde viven los fallos que cuestan caro.
+  // Ademas el arquetipo se vende como "descargalo y trabaja con agentes": si la caja donde se desarrolla
+  // no puede correr Docker, esa promesa es falsa. Se decidio quedarse con un solo perfil, con Docker.
   //
-  // Para lo que SI necesita Docker (tests con Testcontainers, `compose-app.yml` del proyecto
-  // generado) esta el otro perfil: .devcontainer/with-docker/. VS Code pregunta cual abrir.
+  // ⚠️ QUE SE PIERDE, DICHO EN VOZ ALTA: Docker-in-Docker exige `privileged` (lo pone la propia feature),
+  // y un contenedor privilegiado NO aisla del anfitrion — aqui, tu VM de WSL. Se evaluaron las
+  // alternativas y ninguna sale gratis hoy:
+  //   · DinD rootless      → issue ABIERTO en la spec de devcontainers (#479): fallan las escrituras al
+  //                          bind mount salvo corriendo como root dentro. Sin receta verificada.
+  //   · Podman rootless    → obliga a TESTCONTAINERS_RYUK_DISABLED=true (adios a la limpieza automatica)
+  //                          y trae rarezas de red y de permisos del socket.
+  //   · docker-outside-of-docker → el socket del anfitrion ES root en el anfitrion, y mezcla los
+  //                          contenedores efimeros de los tests con los de trabajo real. Peor, no mejor.
+  // Conclusion: el contenedor nunca fue la frontera real (el repo va montado en lectura/escritura y el
+  // token de gh vive dentro). La contencion de verdad es DONDE corre esto: VM que puedas tirar, token
+  // fine-grained limitado a este repo, y revisar el diff. Lo que SI se conserva es el firewall de salida,
+  // que no para a un agente hostil pero si para el fallo dominante: el despiste.
   //
-  // Formato JSONC: los comentarios son validos.
-  "name": "archetype-invarato · hardened (agentes)",
+  // Formato JSONC: los comentarios son validos, pero las claves VAN ENTRECOMILLADAS.
+  "name": "archetype-invarato · dev",
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "TZ": "${localEnv:TZ:Europe/Madrid}",
-      "RESTRICT_SUDO": "true"
+      "TZ": "${localEnv:TZ:Europe/Madrid}"
     }
   },
   "remoteUser": "vscode",
 
-  // Contencion: se quitan TODAS las capabilities y se devuelven solo las que hacen falta para poder
-  // levantar el firewall. Cada una esta aqui por un fallo concreto, no por si acaso:
-  //   NET_ADMIN, NET_RAW → iptables/ipset; sin ellas init-firewall.sh no puede hacer nada.
-  //   SETUID, SETGID     → sin ellas `sudo` muere con "unable to change to root gid" y el firewall
-  //                        no llega ni a arrancar (el bit setuid da euid=0, pero cambiar de gid es
-  //                        una capability aparte).
-  //   AUDIT_WRITE        → sudo aborta al inicializar su plugin de auditoria.
-  //   KILL               → para reiniciar dnsmasq, que corre como `nobody`: root SIN esta
-  //                        capability no puede señalar a un proceso de otro usuario, y el firewall
-  //                        fallaba en el SEGUNDO arranque del contenedor (el primero iba bien, que
-  //                        es como no verlo hasta que ya confias en el).
-  //
-  // ⚠️ Aqui NO va `--security-opt=no-new-privileges`, aunque suene a lo correcto: bloquea el bit
-  // setuid y con el se lleva `sudo`, que es justo como se lanza el firewall. Seria hardening que
-  // desactiva el hardening.
-  "runArgs": [
-    "--cap-drop=ALL",
-    "--cap-add=NET_ADMIN",
-    "--cap-add=NET_RAW",
-    "--cap-add=SETUID",
-    "--cap-add=SETGID",
-    "--cap-add=AUDIT_WRITE",
-    "--cap-add=KILL"
-  ],
-
-  // ⚠️ El repo NO se monta en /workspace, sino un nivel por debajo. Es deliberado y es la pieza
-  // clave: `make generate` (y restart_build.bash) escriben el proyecto generado en `dirname $PWD`.
-  // Con el repo en /workspace ese padre seria `/` y la generacion fallaria; asi aterriza en
+  // ⚠️ El repo NO se monta en /workspace, sino un nivel por debajo. Es deliberado y es la pieza clave:
+  // `make generate` (y restart_build.bash) escriben el proyecto generado en `dirname $PWD`. Con el repo
+  // en /workspace ese padre seria `/` y la generacion fallaria; asi aterriza en
   // /workspace/projectTestForAnalysis, al lado del repo y visible en el explorador del IDE.
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/${localWorkspaceFolderBasename},type=bind,consistency=cached",
   "workspaceFolder": "/workspace/${localWorkspaceFolderBasename}",
-  // El proyecto generado vive SOLO dentro del contenedor (no se refleja en el host): es de usar y
-  // tirar —`make clean` lo borra en cada ciclo— y asi el directorio de proyectos del host no se ensucia.
+  // El proyecto generado vive SOLO dentro del contenedor (no se refleja en el host): es de usar y tirar
+  // —`make clean` lo borra en cada ciclo— y asi el directorio de proyectos del host no se ensucia.
 
   "features": {
-    // JDK 25 + Maven. 25 porque es lo que fija el pom de la plantilla (<java.version>25</java.version>):
-    // el arquetipo tiene que compilarse y probarse con el mismo JDK que van a usar sus proyectos.
+    // JDK 25 + Maven. 25 porque es lo que fija el pom de la plantilla: el arquetipo tiene que compilarse
+    // y probarse con el mismo JDK que van a usar sus proyectos.
     //
-    // jdkDistro 'tem' (Temurin) y NO el 'ms' por defecto: el build de Microsoft para 25 se publica en
+    // ⚠️ jdkDistro 'tem' (Temurin) y NO el 'ms' por defecto: el build de Microsoft para 25 se publica en
     // SDKMAN como '25.0.4+1-ms' y el regex del feature no admite el '+1' → falla con "Version 25 not
     // found" y una lista de versiones vacia. Temurin ('25.0.4-tem') si encaja. Mismo OpenJDK 25 LTS.
     //
-    // mavenVersion 'latest' = 3.9.x estable (Maven 4 sigue en RC). Cumple el minimo del readme (3.6.3+).
+    // mavenVersion 'latest' = 3.9.x estable (Maven 4 sigue en RC).
     "ghcr.io/devcontainers/features/java:1": {
       "version": "25",
       "jdkDistro": "tem",
@@ -74,60 +61,69 @@
       "mavenVersion": "latest"
     },
 
-    // Para trabajar contra el repo de GitHub desde dentro (PRs, releases). El Dockerfile ademas
-    // cablea git al token de `gh`.
+    // Docker DENTRO del contenedor, no el socket del anfitrion. Con docker-outside-of-docker los
+    // contenedores efimeros de Testcontainers acabarian en el Docker del host, mezclados con los de
+    // trabajo real — y ese socket es root en el host.
+    // La feature pone `privileged` por su cuenta: no hay forma de tener esto sin ello.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": { "moby": false },
+
+    // Para trabajar contra el repo de GitHub desde dentro (PRs, releases). El Dockerfile ademas cablea
+    // git al token de `gh`.
     "ghcr.io/devcontainers/features/github-cli:1": {}
 
-    // Claude Code NO va como feature: la suya instala via npm y arrastraria Node (18 EOL) a un repo
-    // JVM. Se instala su binario NATIVO en el Dockerfile → contenedor sin runtime de Node. La
-    // extension de VS Code que aportaba la feature se declara a mano abajo, en customizations.
+    // Claude Code NO va como feature: la suya instala via npm y arrastraria Node (18 EOL) a un repo JVM.
+    // Se instala su binario NATIVO en el Dockerfile → contenedor sin runtime de Node.
   },
 
   "mounts": [
     // ── Lo que tiene que sobrevivir a un "Rebuild Container" ──────────────────────────────
-    // $HOME pertenece al contenedor: lo que no este en un volumen se borra en CADA rebuild. Y eso
-    // no se descubre cuando se pierde, sino cuando lo necesitas — al ir a mirar por que el CI esta
-    // rojo, o al ir a publicar una version. Por eso van TODOS de una vez y no segun vaya doliendo:
-    // cada tanda cuesta un rebuild.
+    // $HOME pertenece al contenedor: lo que no este en un volumen se borra en CADA rebuild. Y eso no se
+    // descubre cuando se pierde, sino cuando lo necesitas — al ir a mirar por que el CI esta rojo, o al ir
+    // a publicar una version. Por eso van TODOS de una vez: cada tanda cuesta un rebuild.
     //
-    // Nombres FIJOS y no `${devcontainerId}` a proposito: ese id se deriva de las etiquetas que
-    // identifican al devcontainer (carpeta local + fichero de configuracion), asi que los dos
-    // perfiles acabarian con volumenes DISTINTOS y cambiar de perfil te costaria la cache de Maven,
-    // la sesion de Claude y los worktrees. El precio de los nombres fijos: dos clones del repo en
-    // la misma maquina los comparten.
-    // Cache de Maven. Ademas de acelerar builds, es donde `mvn install` deja el propio arquetipo
-    // para que `mvn archetype:generate` lo encuentre — el ciclo entero de este repo pasa por aqui.
+    // Nombres FIJOS y no `${devcontainerId}` a proposito: ese id se deriva de las etiquetas del
+    // devcontainer, asi que cambiar de configuracion te costaria la cache de Maven, la sesion de Claude y
+    // los worktrees. El precio: dos clones del repo en la misma maquina los comparten.
+
+    // Cache de Maven. Ademas de acelerar builds, es donde `mvn install` deja el propio arquetipo para que
+    // `mvn archetype:generate` lo encuentre — el ciclo entero de este repo pasa por aqui.
     "source=archetype-invarato-m2,target=/home/vscode/.m2,type=volume",
 
-    // Estado de Claude Code: credenciales, settings, transcripciones (projects/), sesiones, plugins
-    // y —gracias a CLAUDE_CONFIG_DIR en el Dockerfile— tambien el .claude.json, que por defecto
-    // vive FUERA de este directorio y se perderia en cada rebuild.
+    // Estado de Claude Code: credenciales, settings, transcripciones, sesiones y —gracias a
+    // CLAUDE_CONFIG_DIR en el Dockerfile— tambien el .claude.json, que por defecto vive FUERA de este
+    // directorio y se perderia en cada rebuild.
     "source=archetype-invarato-claude,target=/home/vscode/.claude,type=volume",
 
-    // Los worktrees que se crean los agentes. Volumen y no una carpeta cualquiera del contenedor,
-    // porque si no se los lleva por delante el primer rebuild y con ellos el trabajo a medias.
-    // Funciona porque git enlaza worktree y repo por RUTA ABSOLUTA en los dos sentidos
-    // (`<worktree>/.git` → `/workspace/<repo>/.git/worktrees/<n>` y vuelta), y las dos rutas se
-    // mantienen entre rebuilds: una es el bind mount del repo y la otra este volumen.
+    // Los worktrees que se crean los agentes. Volumen y no una carpeta cualquiera, porque si no se los
+    // lleva por delante el primer rebuild y con ellos el trabajo a medias.
     "source=archetype-invarato-worktrees,target=/home/vscode/worktrees,type=volume",
 
-    // La sesion de `gh` (token de GitHub). Se monta SOLO el subdirectorio `gh` y no todo `.config`:
-    // el volumen estrecho evita arrastrar la configuracion de otras herramientas sin querer.
-    // ⚠️ Es una CREDENCIAL al alcance de los agentes y sobrevive al contenedor. Usa un token de
-    // alcance reducido (fine-grained, solo este repo) y no tu token personal de todo GitHub.
+    // La sesion de `gh`. Se monta SOLO el subdirectorio `gh` y no todo `.config`.
+    // ⚠️ Es una CREDENCIAL al alcance de los agentes y sobrevive al contenedor. Usa un token
+    // fine-grained limitado a este repo, no tu token personal de todo GitHub.
     "source=archetype-invarato-gh,target=/home/vscode/.config/gh,type=volume",
 
-    // El historial de shell. Parece una tonteria hasta el primer rebuild, cuando el comando largo
-    // de ayer ya no esta y no hay de donde sacarlo.
-    "source=archetype-invarato-history,target=/home/vscode/.commandhistory,type=volume"
+    // El historial de shell. Parece una tonteria hasta el primer rebuild.
+    "source=archetype-invarato-history,target=/home/vscode/.commandhistory,type=volume",
 
-    // Aqui NO se montan ~/.gnupg ni ~/.ssh a proposito: la clave con la que firmas releases y la de
-    // acceso a servidores no tienen por que estar al alcance de un agente. Viven en el perfil
-    // with-docker, que es tu sesion. Los agentes empujan por HTTPS con el token de `gh`, que es lo
-    // que usa el remote de este repo — no necesitan SSH para trabajar.
+    // La clave GPG con la que se firman los artefactos para Maven Central. Volumen propio y NO un bind de
+    // tu ~/.gnupg del host: importa aqui SOLO la clave de este proyecto en vez de exponer el llavero entero.
+    "source=archetype-invarato-gnupg,target=/home/vscode/.gnupg,type=volume",
+
+    // Claves SSH. El remote de este repo es HTTPS, asi que para el trabajo normal no hacen falta.
+    // ⚠️ OJO AL ORDEN, que es al reves de lo que parece: primero RECONSTRUYE y despues pega la clave. El
+    // volumen nace vacio y se monta ENCIMA; si reconstruyes con la clave ya puesta, el montaje la tapa.
+    // Despues: chmod 600 sobre la clave, o ssh la ignora en silencio.
+    "source=archetype-invarato-ssh,target=/home/vscode/.ssh,type=volume",
+
+    // La sesion de `docker login`. Sin esto, cada rebuild vuelve a tirar de Docker Hub como anonimo — y
+    // ahi es donde te encuentras el "toomanyrequests" a mitad de un `make verify`, que no parece un
+    // problema de credenciales. Tambien guarda el estado de buildx.
+    "source=archetype-invarato-docker,target=/home/vscode/.docker,type=volume"
   ],
 
   "containerEnv": {
+    "DOCKER_BUILDKIT": "1",
     // Claude: desagregado (corta telemetria/errores/feedback pero DEJA los auto-updates; issue #53899 —
     // NO uses CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1, que apaga el auto-updater).
     "DISABLE_TELEMETRY": "1",
@@ -135,6 +131,16 @@
     "DISABLE_FEEDBACK_COMMAND": "1",
     "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
     "DEVCONTAINER": "true"
+  },
+
+  // Puertos del PROYECTO GENERADO cuando lo arrancas aqui dentro para comprobar que el arquetipo produce
+  // algo que funciona. 8080 = API · 5005 = debug JVM · 5432 = Postgres · 6379 = Redis.
+  "forwardPorts": [8080, 5005, 5432, 6379],
+  "portsAttributes": {
+    "8080": { "label": "Spring API (proyecto generado)", "onAutoForward": "notify" },
+    "5005": { "label": "JVM debug", "onAutoForward": "silent" },
+    "5432": { "label": "Postgres", "onAutoForward": "silent" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" }
   },
 
   "customizations": {
@@ -148,9 +154,8 @@
       ],
       "settings": {
         "java.configuration.updateBuildConfiguration": "automatic",
-        // El pom de la PLANTILLA (src/main/resources/archetype-resources/pom.xml) no es un pom
-        // valido por si solo: lleva ${groupId}/${artifactId} sin resolver. Fuera del import del IDE,
-        // o el proyecto Java aparece permanentemente en error.
+        // Los poms de la PLANTILLA no son poms validos por si solos: llevan ${groupId}/${artifactId} sin
+        // resolver. Fuera del import del IDE, o el proyecto Java aparece permanentemente en error.
         "java.import.exclusions": [
           "**/src/main/resources/archetype-resources/**",
           "**/target/**"
@@ -167,14 +172,15 @@
     }
   },
 
-  // Comprobacion de que la caja esta completa + precarga de los plugins Maven que usa el ciclo
-  // (archetype, gpg, central-publishing), para que el primer `make build` no se pare a descargarlos.
-  "postCreateCommand": "java -version; mvn -version; mvn -B -q -Dgpg.skip=true dependency:resolve-plugins || true",
+  // Comprobacion de que la caja esta completa + precarga de los plugins Maven del ciclo (archetype, gpg,
+  // central-publishing), para que el primer `make build` no se pare a descargarlos.
+  "postCreateCommand": "java -version; mvn -version; docker version; mvn -B -q -Dgpg.skip=true dependency:resolve-plugins || true",
 
-  // El firewall se levanta en CADA arranque (las reglas viven en el namespace de red, que es nuevo
-  // cada vez) y ANTES de que nadie pueda trabajar: `waitFor` hace que el IDE espere a que termine.
-  // Si falla, falla ruidosamente — el script se verifica a si mismo. Para desactivarlo temporalmente
-  // (p. ej. instalar una extension que no esta en la allowlist), comenta estas dos lineas.
+  // El firewall se levanta en CADA arranque (las reglas viven en el namespace de red, que es nuevo cada
+  // vez) y ANTES de que nadie pueda trabajar: `waitFor` hace que el IDE espere. Se ejecuta DESPUES de que
+  // dockerd haya arrancado, y por eso el script no hace `iptables -F`: eso dejaria a los contenedores de
+  // dentro sin red. Escribe en DOCKER-USER, la cadena que dockerd reserva para esto.
+  // Para desactivarlo temporalmente, comenta estas dos lineas.
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand"
 }
