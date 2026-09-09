@@ -3,9 +3,9 @@ package ${groupId}.controllers.unit;
 import ${groupId}.common.UtilsTest;
 import ${groupId}.controllers.ExampleController;
 import ${groupId}.controllers.unit.common.BaseControllerUnitTest;
-import ${groupId}.dtos.responses.SimpleApiResponse;
 import ${groupId}.dtos.requests.MyTableRequest;
-import ${groupId}.entities.MyTable;
+import ${groupId}.dtos.responses.MyTableResponse;
+import ${groupId}.dtos.responses.SimpleApiResponse;
 import ${groupId}.services.ExampleService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -16,7 +16,6 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
@@ -24,7 +23,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
+/**
+ * Test de SLICE del controlador: solo la capa web, con el servicio simulado.
+ *
+ * <p>Al ser un slice usa la seguridad por defecto de Spring Boot, no la cadena real de la aplicacion.
+ * Por eso aqui si vale {@code @WithMockUser} (esta en la clase base) y hace falta {@code csrf()}: en los
+ * tests de integracion, que si levantan la cadena real —stateless y sin CSRF—, es al reves.</p>
+ */
 @WebMvcTest(ExampleController.class)
 class ExampleControllerUnitTest extends BaseControllerUnitTest {
 
@@ -32,7 +37,11 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ExampleService ExampleService;
+    private ExampleService exampleService;
+
+    private static MyTableResponse respuesta(String name, String surname, String description) {
+        return new MyTableResponse(name, surname, description, null);
+    }
 
     @Test
     void testSayHello() throws Exception {
@@ -43,7 +52,7 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
 
     @Test
     void testSayHelloDto() throws Exception {
-        when(ExampleService.getHelloDto()).thenReturn(new SimpleApiResponse("Hello World DTO"));
+        when(exampleService.getHelloDto()).thenReturn(new SimpleApiResponse("Hello World DTO"));
 
         mockMvc.perform(get("/api/v1/examples/helloDto"))
                 .andDo(print())
@@ -53,46 +62,27 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
 
     @Test
     void testCreateNew() throws Exception {
-        MyTableRequest mockDto = new MyTableRequest(
-                "Name",
-                "Surname",
-                "Description",
-                null
-        );
+        MyTableRequest peticion = new MyTableRequest("Name", "Surname", "Description", null);
+        long idGenerado = 1L;
 
-        long generatedId = 1L;
-
-        when(ExampleService.saveSimple(Mockito.any(MyTableRequest.class))).thenReturn(generatedId);
+        when(exampleService.saveSimple(Mockito.any(MyTableRequest.class))).thenReturn(idGenerado);
 
         mockMvc.perform(post("/api/v1/examples")
                         .header("Host", "localhost")
                         .with(SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(UtilsTest.toJson(mockDto)))
+                        .content(UtilsTest.toJson(peticion)))
                 .andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(header().exists("Location"))
-                .andExpect(header().string("Location", "http://localhost/api/v1/examples/" + generatedId));
+                // La cabecera Location es parte del contrato de un POST que crea: se comprueba.
+                .andExpect(header().string("Location", "http://localhost/api/v1/examples/" + idGenerado));
     }
 
     @Test
     void testListAllEjemplos() throws Exception {
-        MyTable mockEntity = new MyTable();
-        mockEntity.setName("Name");
-        mockEntity.setSurname("Surname");
-        mockEntity.setDescription("Description");
-
-        MyTable mockEntity2 = new MyTable();
-        mockEntity2.setName("Name2");
-        mockEntity2.setSurname("Surname2");
-        mockEntity2.setDescription("Description2");
-
-        List<MyTable> examples = Arrays.asList(
-                mockEntity,
-                mockEntity2
-        );
-
-        when(ExampleService.getAllEjemplos()).thenReturn(examples);
+        when(exampleService.getAllEjemplos()).thenReturn(List.of(
+                respuesta("Name", "Surname", "Description"),
+                respuesta("Name2", "Surname2", "Description2")));
 
         mockMvc.perform(get("/api/v1/examples"))
                 .andDo(print())
@@ -103,12 +93,7 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
 
     @Test
     void testGetEjemplo() throws Exception {
-        MyTable mockEntity = new MyTable();
-        mockEntity.setName("Name");
-        mockEntity.setSurname("Surname");
-        mockEntity.setDescription("Description");
-
-        when(ExampleService.getEjemploById(1L)).thenReturn(mockEntity);
+        when(exampleService.getEjemploById(1L)).thenReturn(respuesta("Name", "Surname", "Description"));
 
         mockMvc.perform(get("/api/v1/examples/1"))
                 .andDo(print())
@@ -120,26 +105,21 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
 
     @Test
     void testUpdateEjemplo() throws Exception {
-        MyTableRequest mockDto = new MyTableRequest(
-                "Name",
-                "Surname",
-                "Description",
-                null
-        );
+        MyTableRequest peticion = new MyTableRequest("Name", "Surname", "Description", null);
 
-        Mockito.doNothing().when(ExampleService).updateEjemploById(1L, mockDto);
+        Mockito.doNothing().when(exampleService).updateEjemploById(1L, peticion);
 
         mockMvc.perform(put("/api/v1/examples/1")
                         .with(SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(UtilsTest.toJson(mockDto)))
+                        .content(UtilsTest.toJson(peticion)))
                 .andDo(print())
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void testDeleteEjemplo() throws Exception {
-        Mockito.doNothing().when(ExampleService).deleteEjemploById(1L);
+        Mockito.doNothing().when(exampleService).deleteEjemploById(1L);
 
         mockMvc.perform(delete("/api/v1/examples/1")
                         .with(SecurityMockMvcRequestPostProcessors.csrf()))

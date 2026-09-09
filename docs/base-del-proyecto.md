@@ -185,6 +185,34 @@ apagar la seguridad sin que algo se ponga rojo.
 
 **Qué la reabriría.** Necesitar clientes de navegador con sesión por cookie: ahí CSRF vuelve.
 
+### D8 · El contrato es code-first, y los clientes se generan de él (2026-09-09)
+
+**Decisión.** El reactor es `app` → `contract` → `client-java` → `client-python`, en ese orden y por ese
+motivo: **`app` PRODUCE el contrato**, los demás lo consumen.
+
+- **Code-first**: la fuente de verdad son los controladores; springdoc deriva el OpenAPI. Encaja con el
+  objetivo del arquetipo (desarrollar rápido: escribes Java y el contrato cae solo). Contract-first —
+  escribir el `openapi.json` a mano y generar las interfaces del servidor— es más rigurosa y más lenta.
+- **El contrato se genera desde un TEST**, no con un plugin de Maven: el plugin tendría que arrancar la
+  aplicación en una fase aparte, con su base de datos; el test reaprovecha el contexto que ya se levanta
+  con Testcontainers. Y de paso hace de guardián: si el contrato cambia sin actualizar el fichero
+  versionado, el build se pone rojo. `make openapi` acepta el cambio.
+- **Los clientes se generan, no se comparten los DTOs del servidor.** Si un consumidor dependiera del jar
+  de `app`, arrastraría Spring Boot, JPA y las entidades, y quedaría atado a la misma versión de Boot y de
+  Java. Generando desde el contrato, el único acuerdo es el contrato.
+
+**Qué la reabriría.** Que varios equipos negocien la API antes de implementarla: ahí contract-first gana.
+
+### D9 · OpenRewrite, apuntando al problema de fondo de D4 (2026-09-09)
+
+Se añade `rewrite-maven-plugin` al pom padre, **sin `executions`**: no corre en el build, se lanza a mano
+(`./mvnw rewrite:run`, o `rewrite:dryRun` para ver qué cambiaría).
+
+**Por qué está aquí.** Subir de versión mayor de Spring Boot son cientos de cambios mecánicos (paquetes
+movidos, APIs renombradas). Hacerlos a mano en cada servicio es donde se pierden las tardes. Pero lo
+importante es lo otro: es el **primer paso hacia la vía de actualización que a los arquetipos les falta**
+(D4). Un arquetipo genera y se olvida; una receta se puede ejecutar sobre un proyecto ya generado.
+
 ---
 
 ## Tropiezos ya pagados
@@ -258,6 +286,15 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   *sobre* el arquetipo; el de `archetype-resources/.devcontainer/` es la plantilla que se copia a los
   proyectos generados. Tocar uno no cambia el otro. (Es el mismo tipo de despiste que G14, pero con los
   devcontainers.)
+- **G26 · Un `application.yaml` en `src/test/resources` TAPA al de `src/main/resources`.** Mismo nombre,
+  y el classpath de test va primero: Spring carga el primero que encuentra y el principal no se lee
+  NUNCA. Consecuencia: la configuracion de la aplicación (nombre, actuator, logging) no se aplicaba en
+  los tests, y no hay forma de notarlo — los tests pasan igual. Se resuelve nombrandolo
+  `application-test.yaml`, que se **superpone** en vez de sustituir.
+- **G27 · springdoc no garantiza el orden de las claves del OpenAPI.** Dos ejecuciones seguidas
+  intercambiaban `first` y `last`. Un test de contrato que parpadea sin que nadie cambie nada acaba
+  desactivado, asi que hay que normalizar de verdad: `ORDER_MAP_ENTRIES_BY_KEYS` **no ordena un
+  `JsonNode`**, solo mapas — hay que deserializar a `Object`.
 - **G22 · Postgres 18 cambió el punto de montaje del volumen.** Espera **un solo** montaje en
   `/var/lib/postgresql` (los datos van en un subdirectorio), no en `/var/lib/postgresql/data` como antes.
   Con el punto antiguo el contenedor arranca, falla y muere — y el síntoma que ves es **la aplicación

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      CLIENTE JAVA, generado a partir del contrato.
+
+      Nada de este modulo se escribe a mano: el codigo sale de
+      contract/src/main/resources/openapi/openapi.json en cada build. Por eso no hay src/ aqui.
+
+      Por que generarlo y no compartir los DTOs del servidor: si el consumidor dependiera del jar de
+      `app`, arrastraria Spring Boot entero, JPA y las entidades — y quedaria atado a la MISMA version de
+      Boot y de Java que el servidor. Generando desde el contrato, el unico acuerdo es el contrato.
+    -->
+    <parent>
+        <groupId>${groupId}</groupId>
+        <artifactId>${artifactId}</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>${artifactId}-client-java</artifactId>
+    <name>${artifactId}-client-java</name>
+    <description>Cliente Java de ${artifactId}, generado desde el contrato OpenAPI</description>
+
+    <dependencies>
+        <!--
+          El generador produce codigo que usa RestClient (el cliente HTTP de Spring). Se elige RestClient
+          y no RestTemplate porque Spring Boot 4 retiro la autoconfiguracion de RestTemplate.
+        -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger-annotations.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <execution>
+                        <id>generar-cliente-java</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <!--
+                              Se lee el contrato del modulo contract por RUTA, no como dependencia: el
+                              generador necesita el fichero antes de la fase en la que se resolveria un
+                              artefacto, y ademas asi no hay que instalar nada para poder generar.
+                            -->
+                            <inputSpec>${project.basedir}/../contract/src/main/resources/openapi/openapi.json</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>restclient</library>
+                            <apiPackage>${groupId}.client.api</apiPackage>
+                            <modelPackage>${groupId}.client.model</modelPackage>
+                            <invokerPackage>${groupId}.client</invokerPackage>
+                            <!-- Solo el cliente: ni tests generados, ni pom, ni README del generador. -->
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+                            <configOptions>
+                                <useJakartaEe>true</useJakartaEe>
+                                <openApiNullable>false</openApiNullable>
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

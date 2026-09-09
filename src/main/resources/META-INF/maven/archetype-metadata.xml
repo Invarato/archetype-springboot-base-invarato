@@ -93,6 +93,22 @@
             </includes>
         </fileSet>
 
+        <!-- ═══ Clientes generados desde el contrato ═════════════════════════════════════ -->
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>client-java</directory>
+            <includes>
+                <include>pom.xml</include>
+            </includes>
+        </fileSet>
+
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>client-python</directory>
+            <includes>
+                <include>pom.xml</include>
+            </includes>
+        </fileSet>
+
         <!-- ═══ Raiz del proyecto ══════════════════════════════════════════════════════════ -->
 
         <!-- Sin filtrar: no llevan placeholders, y algunos (mvnw) romperian al pasar por Velocity -->

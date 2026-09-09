@@ -42,6 +42,9 @@
     <modules>
         <module>app</module>
         <module>contract</module>
+        <!-- Generados desde el contrato: van despues, porque lo consumen. -->
+        <module>client-java</module>
+        <module>client-python</module>
     </modules>
 
     <properties>
@@ -73,6 +76,10 @@
         <archunit.version>1.5.0</archunit.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
+        <openapi-generator.version>7.25.0</openapi-generator.version>
+        <swagger-annotations.version>2.2.30</swagger-annotations.version>
+        <rewrite-maven-plugin.version>6.46.1</rewrite-maven-plugin.version>
+        <rewrite-spring.version>6.37.1</rewrite-spring.version>
 
         <flatten-maven-plugin.version>1.8.0</flatten-maven-plugin.version>
 
@@ -128,6 +135,48 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!--
+              OpenRewrite: migraciones AUTOMATICAS del codigo.
+
+              No se ejecuta en el build (no hay <executions>): se lanza a mano cuando toca migrar.
+
+                  ./mvnw rewrite:run       aplica las recetas activas
+                  ./mvnw rewrite:dryRun    enseña que cambiaria, sin tocar nada
+
+              Para que sirve de verdad: subir de version mayor de Spring Boot son cientos de cambios
+              mecanicos (paquetes movidos, APIs renombradas, `javax` -> `jakarta`). Hacerlos a mano en
+              cada servicio es donde se pierden las tardes y donde se cuelan los despistes. Aqui se
+              cambia la receta y se ejecuta.
+
+              Las recetas activas de abajo son las seguras: limpieza de codigo muerto y modernizacion de
+              tests. Las de migracion de version se activan cuando toque, cambiando `activeRecipes`.
+            -->
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>${rewrite-maven-plugin.version}</version>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.java.testing.junit5.JUnit5BestPractices</recipe>
+                        <recipe>org.openrewrite.staticanalysis.CommonStaticAnalysis</recipe>
+                    </activeRecipes>
+                    <!--
+                      ⚠️ El codigo generado NO se toca: se reescribiria y en el siguiente build volveria
+                      a salir igual, asi que el cambio se pierde y el diff miente.
+                    -->
+                    <exclusions>
+                        <exclusion>**/target/**</exclusion>
+                    </exclusions>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.openrewrite.recipe</groupId>
+                        <artifactId>rewrite-spring</artifactId>
+                        <version>${rewrite-spring.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

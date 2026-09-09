@@ -1,7 +1,7 @@
 package ${groupId}.services.unit;
 
-
 import ${groupId}.dtos.requests.MyTableRequest;
+import ${groupId}.dtos.responses.MyTableResponse;
 import ${groupId}.entities.MyTable;
 import ${groupId}.mappers.MyTableMapper;
 import ${groupId}.repositories.MyTableRepository;
@@ -17,135 +17,108 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-
+/**
+ * Tests unitarios del servicio: sin Spring, sin base de datos, solo la logica.
+ *
+ * <p>Se pueden escribir asi porque el servicio recibe sus dependencias por CONSTRUCTOR. Con inyeccion
+ * por campo haria falta levantar un contexto para poder probarlo — de ahi que
+ * {@code ArchitectureTest} la prohiba.</p>
+ */
 class ExampleServiceUnitTest extends BaseServiceUnitTest {
 
     @InjectMocks
-    private ExampleService ExampleService;
+    private ExampleService exampleService;
 
     @Mock
-    private MyTableRepository MyTableRepository;
+    private MyTableRepository myTableRepository;
 
     @Mock
-    private MyTableMapper MyTableMapper;
+    private MyTableMapper myTableMapper;
 
     @Test
     void testGetAllEjemplos() {
-        // Simulate the repository response
-        MyTable mockEntity1 = new MyTable();
-        mockEntity1.setName("Name");
-        mockEntity1.setSurname("Surname");
-        mockEntity1.setDescription("Description");
+        List<MyTable> entidades = List.of(new MyTable(), new MyTable());
+        List<MyTableResponse> esperadas = List.of(
+                new MyTableResponse("Name", "Surname", "Description", null),
+                new MyTableResponse("Name2", "Surname2", "Description2", null));
 
-        MyTable mockEntity2 = new MyTable();
-        mockEntity2.setName("Name2");
-        mockEntity2.setSurname("Surname2");
-        mockEntity2.setDescription("Description2");
+        when(myTableRepository.findAll()).thenReturn(entidades);
+        when(myTableMapper.toResponses(entidades)).thenReturn(esperadas);
 
-        when(MyTableRepository.findAll()).thenReturn(List.of(mockEntity1, mockEntity2));
+        List<MyTableResponse> ejemplos = exampleService.getAllEjemplos();
 
-        // Execute the function
-        List<MyTable> examples = ExampleService.getAllEjemplos();
-
-        // Validate the response
-        assertNotNull(examples);
-        assertEquals(2, examples.size());
-        verify(MyTableRepository, times(1)).findAll();
+        assertEquals(2, ejemplos.size());
+        assertEquals("Name", ejemplos.getFirst().name());
+        verify(myTableRepository).findAll();
     }
 
     @Test
-    void testsaveSimple() {
-        // Simulated data
-        MyTableRequest request = new MyTableRequest(
-                "New Example",
-                "Surname",
-                "Description",
-                null
-        );
+    void testSaveSimple() {
+        MyTableRequest peticion = new MyTableRequest("New Example", "Surname", "Description", null);
 
-        MyTable mockEntity = spy(new MyTable()); // Spy the instance to customize methods
-        doReturn(1L).when(mockEntity).getId();   // Simulate that ID is "1"
+        MyTable entidad = new MyTable();
+        entidad.setName(peticion.name());
+        entidad.setSurname(peticion.surname());
+        entidad.setDescription(peticion.description());
 
-        // Set properties of the previously simulated entity
-        mockEntity.setName(request.name());
-        mockEntity.setSurname(request.surname());
-        mockEntity.setDescription(request.description());
+        MyTable guardada = spy(entidad);
+        doReturn(1L).when(guardada).getId();
 
-        when(MyTableRepository.save(any(MyTable.class))).thenReturn(mockEntity);
-        when(MyTableMapper.toEntity(request)).thenReturn(mockEntity);
+        when(myTableMapper.toEntity(peticion)).thenReturn(entidad);
+        when(myTableRepository.save(any(MyTable.class))).thenReturn(guardada);
 
-        // Execute and verify
-        Long newId = ExampleService.saveSimple(request);
-        assertEquals(1L, newId);
+        Long nuevoId = exampleService.saveSimple(peticion);
+        assertEquals(1L, nuevoId);
 
-        // Capture the actual arguments passed to security service
-        ArgumentCaptor<MyTable> tableCaptor = ArgumentCaptor.forClass(MyTable.class);
+        // Se comprueba QUE se guarda, no solo que se devolvio un id.
+        ArgumentCaptor<MyTable> captor = ArgumentCaptor.forClass(MyTable.class);
+        verify(myTableRepository).save(captor.capture());
+        assertEquals("New Example", captor.getValue().getName());
+        assertEquals("Surname", captor.getValue().getSurname());
+        assertEquals("Description", captor.getValue().getDescription());
+    }
 
-        // Verify that repository received a MyTable object
-        verify(MyTableRepository).save(tableCaptor.capture());
+    @Test
+    void testGetEjemploById_Encontrado() {
+        MyTable entidad = new MyTable();
+        MyTableResponse esperada = new MyTableResponse("Name", "Surname", "Description", null);
 
-        // Validate that captured object is correct
-        MyTable capturedEntity = tableCaptor.getValue();
-        assertEquals("New Example", capturedEntity.getName());
-        assertEquals("Surname", capturedEntity.getSurname());
-        assertEquals("Description", capturedEntity.getDescription());
+        when(myTableRepository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(myTableMapper.toResponse(entidad)).thenReturn(esperada);
+
+        assertEquals("Name", exampleService.getEjemploById(1L).name());
+        verify(myTableRepository).findById(1L);
+    }
+
+    @Test
+    void testGetEjemploById_NoEncontrado() {
+        when(myTableRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> exampleService.getEjemploById(1L));
+        verify(myTableRepository).findById(1L);
     }
 
     @Test
     void testDeleteEjemploById() {
-        // Configure mock
-        MyTable mockEntity = new MyTable();
-        mockEntity.setName("Name");
-        mockEntity.setSurname("Surname");
-        mockEntity.setDescription("Description");
+        MyTable entidad = new MyTable();
+        when(myTableRepository.findById(1L)).thenReturn(Optional.of(entidad));
 
-        Long id = 1L;
+        exampleService.deleteEjemploById(1L);
 
-        when(MyTableRepository.findById(id)).thenReturn(Optional.of(mockEntity));
-
-        // Execute function
-        ExampleService.deleteEjemploById(id);
-
-        // Verify interaction
-        verify(MyTableRepository, times(1)).findById(id);
-        verify(MyTableRepository, times(1)).delete(any(MyTable.class));
+        verify(myTableRepository).findById(1L);
+        verify(myTableRepository).delete(entidad);
     }
 
     @Test
-    void testGetEjemploById_Success() {
-        // Create MyTable mock with assigned ID
-        MyTable MyTable = mock(MyTable.class);
-        when(MyTable.getId()).thenReturn(1L); // Configure ID with getter
+    void testDeleteEjemploById_NoEncontrado() {
+        when(myTableRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // Simulate MyTableRepository.save() behavior
-        when(MyTableRepository.save(any(MyTable.class))).thenReturn(MyTable); // Mock repository returns this object
-
-        // Save object and get generated ID
-        Long generatedId = MyTableRepository.save(new MyTable()).getId();
-
-        // Now configure findById() behavior
-        when(MyTableRepository.findById(generatedId)).thenReturn(Optional.of(MyTable));
-
-        // Invoke service
-        MyTable result = ExampleService.getEjemploById(generatedId);
-
-        // Verify results
-        assertNotNull(result);
-        assertEquals(generatedId, result.getId());
-        verify(MyTableRepository, times(1)).findById(generatedId);
-    }
-
-    @Test
-    void testGetEjemploById_NotFound() {
-        // Simulate record does not exist
-        Long id = 1L;
-        when(MyTableRepository.findById(id)).thenReturn(Optional.empty());
-
-        // Invoke function and expect exception
-        assertThrows(NoSuchElementException.class, () -> ExampleService.getEjemploById(id));
-        verify(MyTableRepository, times(1)).findById(id);
+        assertThrows(NoSuchElementException.class, () -> exampleService.deleteEjemploById(1L));
+        // Y sobre todo: no se borra nada si no existia.
+        verify(myTableRepository, never()).delete(any());
     }
 
 }

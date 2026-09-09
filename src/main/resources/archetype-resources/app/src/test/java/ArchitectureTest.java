@@ -85,6 +85,22 @@ class ArchitectureTest {
             .as("Los servicios terminan en *Service");
 
     /**
+     * Los controladores no tocan entidades.
+     *
+     * <p>Es la regla que mas se salta y la que mas caro sale, porque el coste no se ve donde se comete.
+     * Lo que devuelve un controlador acaba en el contrato OpenAPI y, desde ahi, <b>en todos los clientes
+     * generados</b>: publicar la entidad convierte cualquier cambio de la tabla en un cambio de la API
+     * publica. Ademas, serializarla fuera de la transaccion revienta con las relaciones perezosas.</p>
+     *
+     * <p>Aqui ya paso: el cliente Java generado traia una clase con la forma exacta de la tabla.</p>
+     */
+    @ArchTest
+    static final ArchRule los_controladores_no_exponen_entidades = noClasses()
+            .that().resideInAPackage("..controllers..")
+            .should().dependOnClassesThat().resideInAPackage("..entities..")
+            .as("Los controladores devuelven DTOs, nunca entidades");
+
+    /**
      * Los DTOs son la frontera con el exterior: no conocen a nadie hacia dentro.
      */
     @ArchTest

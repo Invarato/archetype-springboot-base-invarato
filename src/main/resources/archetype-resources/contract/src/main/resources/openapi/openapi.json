@@ -1,27 +1,6 @@
 {
   "components" : {
     "schemas" : {
-      "MyTable" : {
-        "properties" : {
-          "description" : {
-            "type" : "string"
-          },
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "myTableParent" : {
-            "$ref" : "#/components/schemas/MyTable"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "surname" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
       "MyTableRequest" : {
         "properties" : {
           "description" : {
@@ -53,11 +32,29 @@
         "required" : [ "name" ],
         "type" : "object"
       },
-      "PageMyTable" : {
+      "MyTableResponse" : {
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "myTableParentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "surname" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PageMyTableResponse" : {
         "properties" : {
           "content" : {
             "items" : {
-              "$ref" : "#/components/schemas/MyTable"
+              "$ref" : "#/components/schemas/MyTableResponse"
             },
             "type" : "array"
           },
@@ -171,7 +168,7 @@
               "*/*" : {
                 "schema" : {
                   "items" : {
-                    "$ref" : "#/components/schemas/MyTable"
+                    "$ref" : "#/components/schemas/MyTableResponse"
                   },
                   "type" : "array"
                 }
@@ -250,7 +247,7 @@
       "get" : {
         "operationId" : "listPaginatedFromService",
         "parameters" : [ {
-          "description" : "Número de Página",
+          "description" : "Numero de pagina",
           "in" : "query",
           "name" : "page",
           "schema" : {
@@ -258,7 +255,7 @@
             "type" : "integer"
           }
         }, {
-          "description" : "Tamaño de página",
+          "description" : "Tamano de pagina",
           "in" : "query",
           "name" : "size",
           "schema" : {
@@ -266,9 +263,9 @@
             "type" : "integer"
           }
         }, {
-          "description" : "Orden (field,dir). Puede repetirse",
+          "description" : "Orden (campo,direccion). Puede repetirse",
           "in" : "query",
-          "name" : "name",
+          "name" : "sort",
           "schema" : {
             "default" : "id,asc",
             "type" : "string"
@@ -279,7 +276,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PageMyTable"
+                  "$ref" : "#/components/schemas/PageMyTableResponse"
                 }
               }
             },
@@ -324,7 +321,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/MyTable"
+                  "$ref" : "#/components/schemas/MyTableResponse"
                 }
               }
             },

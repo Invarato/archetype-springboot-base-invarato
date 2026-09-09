@@ -1,6 +1,5 @@
 package ${groupId}.services.integration;
 
-
 import ${groupId}.dtos.requests.MyTableRequest;
 import ${groupId}.dtos.responses.MyTableResponse;
 import ${groupId}.entities.MyTable;
@@ -15,88 +14,71 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+/**
+ * Tests de integracion del servicio: contra una base de datos real (efimera, via Testcontainers).
+ *
+ * <p>El servicio devuelve DTOs, no entidades. El repositorio se usa aqui solo para <b>comprobar</b> lo
+ * que quedo guardado, que es justo lo que un test de integracion debe verificar: no que el metodo
+ * respondio, sino que el dato esta.</p>
+ */
 class ExampleServiceIT extends BaseServiceIT {
 
     @Autowired
-    private ExampleService ExampleService;
+    private ExampleService exampleService;
 
     @Autowired
-    private MyTableRepository MyTableRepository;
+    private MyTableRepository myTableRepository;
 
     @Test
     void testGetAllEjemplos() {
-        MyTableRequest request = new MyTableRequest(
-                "New Example",
-                "Surname",
-                "Description",
-                null
-        );
+        exampleService.saveSimple(new MyTableRequest("New Example", "Surname", "Description", null));
 
-        ExampleService.saveSimple(request);
+        List<MyTableResponse> ejemplos = exampleService.getAllEjemplos();
 
-        // Execute the function
-        List<MyTable> examples = ExampleService.getAllEjemplos();
-
-        // Validate results
-        assertNotNull(examples);
-        assertEquals(1, examples.size());
-        assertEquals("New Example", examples.get(0).getName());
+        assertNotNull(ejemplos);
+        assertEquals(1, ejemplos.size());
+        assertEquals("New Example", ejemplos.getFirst().name());
     }
 
     @Test
-    void testsaveSimple() {
-        // Prepare the DTO
-        MyTableRequest request = new MyTableRequest(
-                "Saved Example",
-                "Surname",
-                "Description",
-                null
-        );
+    void testSaveSimple() {
+        Long nuevoId = exampleService.saveSimple(
+                new MyTableRequest("Saved Example", "Surname", "Description", null));
 
-        // Execute the function 
-        Long newId = ExampleService.saveSimple(request);
+        // Se comprueba contra la base de datos, no contra lo que devolvio el servicio.
+        MyTable guardada = myTableRepository.findById(nuevoId).orElse(null);
+        assertNotNull(guardada);
+        assertEquals("Saved Example", guardada.getName());
+    }
 
-        // Verify it was saved
-        MyTable MyTable = MyTableRepository.findById(newId).orElse(null);
-        assertNotNull(MyTable);
-        assertEquals("Saved Example", MyTable.getName());
+    @Test
+    void testGetEjemploById() {
+        Long id = exampleService.saveSimple(new MyTableRequest("Uno", "Dos", "Tres", null));
+
+        MyTableResponse encontrado = exampleService.getEjemploById(id);
+
+        assertEquals("Uno", encontrado.name());
+        assertEquals("Dos", encontrado.surname());
+        assertEquals("Tres", encontrado.description());
+    }
+
+    @Test
+    void testUpdateEjemploById() {
+        Long id = exampleService.saveSimple(new MyTableRequest("Antes", "A", "D", null));
+
+        exampleService.updateEjemploById(id, new MyTableRequest("Despues", "B", "E", null));
+
+        assertEquals("Despues", exampleService.getEjemploById(id).name());
     }
 
     @Test
     void testDeleteEjemploById() {
-        // Add a record to delete
-        MyTable MyTable = new MyTable();
-        MyTable.setName("Record to delete");
-        MyTable savedTable = MyTableRepository.save(MyTable);
-        MyTableRepository.flush();
+        Long id = exampleService.saveSimple(new MyTableRequest("Para borrar", null, null, null));
 
-        // Delete the record
-        ExampleService.deleteEjemploById(savedTable.getId());
+        exampleService.deleteEjemploById(id);
 
-        // Verify it no longer exists
-        Optional<MyTable> deletedTable = MyTableRepository.findById(savedTable.getId());
-        assertTrue(deletedTable.isEmpty());
-    }
-
-    @Test
-    void testGetAllEjemploResponses() {
-        MyTableRequest request = new MyTableRequest(
-                "New Example",
-                "Surname",
-                "Description",
-                null
-        );
-
-        ExampleService.saveSimple(request);
-
-        // Execute the function
-        List<MyTableResponse> examples = ExampleService.getAllEjemploResponses();
-
-        // Validate results
-        assertNotNull(examples);
-        assertEquals(1, examples.size());
-        assertEquals("New Example", examples.getFirst().name());
+        Optional<MyTable> borrada = myTableRepository.findById(id);
+        assertTrue(borrada.isEmpty());
     }
 
 }

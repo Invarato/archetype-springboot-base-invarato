@@ -82,6 +82,29 @@ if [ -f "$GEN/skaffold.yaml" ]; then
   $c5_ok && ok "C5 los manifiestos que declara skaffold existen"
 fi
 
+# ── C7 · El contrato existe y no publica entidades ──────────────────────────────────────────
+# El contrato es lo que compilan los consumidores. Dos cosas se comprueban aqui porque el build no las
+# ve: que el fichero VIAJA (si no, el primer `make verify` del proyecto generado falla al no tener con
+# que comparar), y que no se ha colado una entidad JPA en el.
+CONTRATO="$GEN/contract/src/main/resources/openapi/openapi.json"
+if [ ! -f "$CONTRATO" ]; then
+  fail "C7 falta el contrato en contract/src/main/resources/openapi/openapi.json"
+elif grep -qE '"(MyTable|[A-Za-z]+Entity)"[[:space:]]*:' "$CONTRATO" 2>/dev/null; then
+  fail "C7 el contrato publica una ENTIDAD. Los controladores deben devolver DTOs: lo que se publica"
+  echo "       acaba en todos los clientes generados y ata la API a la forma de la tabla."
+else
+  ok "C7 el contrato viaja y no publica entidades"
+fi
+
+# ── C8 · Los clientes generan codigo de verdad ──────────────────────────────────────────────
+# Un generador mal configurado no falla: no genera nada, el modulo compila vacio y el consumidor se
+# encuentra un jar sin clases. Se comprueba solo si ya se ha construido el proyecto.
+if [ -d "$GEN/client-java/target/generated-sources" ]; then
+  n=$(find "$GEN/client-java/target/generated-sources" -name '*.java' 2>/dev/null | wc -l)
+  [ "$n" -gt 0 ] && ok "C8 el cliente Java genera codigo ($n ficheros)" \
+                 || fail "C8 el cliente Java no ha generado ninguna clase"
+fi
+
 # ── C6 · Ficheros que no deberian viajar ────────────────────────────────────────────────────
 for basura in __gitignore old__Dockerfile; do
   [ -e "$GEN/$basura" ] && fail "C6 '$basura' no deberia generarse" || true
@@ -90,7 +113,7 @@ ok "C6 sin ficheros muertos conocidos"
 
 echo
 if [ "$fallos" -eq 0 ]; then
-  printf '\033[0;32m✓ %s comprobaciones estructurales OK\033[0m\n' "6"
+  printf '\033[0;32m✓ %s comprobaciones estructurales OK\033[0m\n' "8"
   exit 0
 fi
 printf '\033[0;31m✗ %s comprobacion(es) fallidas\033[0m\n' "$fallos"

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      CLIENTE PYTHON, generado a partir del mismo contrato que el cliente Java.
+      Sale en target/generated-sources/python, listo para empaquetar con pip.
+
+      Es un modulo Maven aunque el resultado no sea Java: asi el cliente se regenera en el mismo build
+      que el contrato del que depende. Un generador que hay que acordarse de lanzar a mano produce
+      clientes desfasados, y el desfase no se nota hasta que un consumidor falla.
+
+      packaging `pom` porque aqui no se produce ningun jar.
+    -->
+    <parent>
+        <groupId>${groupId}</groupId>
+        <artifactId>${artifactId}</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>${artifactId}-client-python</artifactId>
+    <name>${artifactId}-client-python</name>
+    <description>Cliente Python de ${artifactId}, generado desde el contrato OpenAPI</description>
+    <packaging>pom</packaging>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <execution>
+                        <id>generar-cliente-python</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/../contract/src/main/resources/openapi/openapi.json</inputSpec>
+                            <generatorName>python</generatorName>
+                            <output>${project.build.directory}/generated-sources/python</output>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <!-- Nombre fijo: los paquetes de Python no admiten guiones y un artifactId con guion
+                                     (mi-servicio) generaria un paquete invalido. El nombre pip si lleva el del proyecto. -->
+                                <packageName>api_client</packageName>
+                                <projectName>${artifactId}-client</projectName>
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
