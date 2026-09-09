@@ -36,7 +36,8 @@ app/               EL MICROSERVICIO. Lo único que produce un jar ejecutable y u
   src/main/resources/      application.yaml y las migraciones de db/migration
 contract/          el contrato OpenAPI, y más adelante los clientes Java/Python y stubs generados
 compose-app.yml    Postgres y Redis para desarrollo
-k8s/ · skaffold.yaml · Dockerfile
+helm/            el chart de despliegue, con values por entorno
+Dockerfile · compose-app.yml · .devcontainer/
 ```
 
 ⚠️ La dependencia va siempre `contract` ← `app`, nunca al revés.

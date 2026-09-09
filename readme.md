@@ -49,7 +49,8 @@ mi-servicio/
 ├── contract/         el contrato OpenAPI, versionado y empaquetado
 ├── client-java/      cliente Java generado del contrato
 ├── client-python/    cliente Python generado del contrato
-├── compose-app.yml · Dockerfile · k8s/ · .devcontainer/
+├── helm/             chart de despliegue, con values por entorno
+├── compose-app.yml · Dockerfile · .devcontainer/
 ```
 
 ### Lo que trae dentro

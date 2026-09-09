@@ -1,0 +1,39 @@
+# Produccion.
+#   helm upgrade --install <release> ./helm/<chart> -f values-prod.yaml --set image.tag=X.Y.Z
+#
+# ⚠️ image.tag se pasa SIEMPRE de forma explicita. Sin version fijada no se sabe que esta corriendo y un
+# rollback deja de ser repetible.
+replicaCount: 3
+
+env:
+  SPRING_PROFILES_ACTIVE: prod
+  LOG_LEVEL: INFO
+  OAUTH2_ISSUER_URI: ""
+  CORS_ALLOWED_ORIGINS: ""
+
+database:
+  host: ""
+
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 500m
+  limits:
+    memory: 2Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Con varias replicas, esto es lo que evita que un mantenimiento del cluster deje el servicio a cero.
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+ingress:
+  enabled: true
+  host: ejemplo.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod

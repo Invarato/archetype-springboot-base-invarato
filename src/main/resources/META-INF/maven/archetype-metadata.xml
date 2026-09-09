@@ -129,11 +129,7 @@
                 <include>compose-app.yml</include>
                 <include>readme.md</include>
                 <include>Makefile</include>
-                <include>Dockerfile</include>
-                <include>skaffold.yaml</include>
-                <include>MAKEFILE.md</include>
-                <include>SKAFFOLD.md</include>
-            </includes>
+                <include>Dockerfile</include>                <include>MAKEFILE.md</include>            </includes>
         </fileSet>
 
         <!--
@@ -155,14 +151,16 @@
             <directory>.devcontainer</directory>
         </fileSet>
 
-        <!-- ═══ Kubernetes ═════════════════════════════════════════════════════════════════
-             Se generan de verdad. Antes estaban comentados mientras skaffold.yaml SI se generaba,
-             asi que el proyecto nacia con un skaffold apuntando a ficheros que no existian.
+        <!-- ═══ Kubernetes (chart de Helm) ═══════════════════════════════════════════════
+             ⚠️ El directorio se llama `__artifactId__` y se renombra al generar: el arquetipo
+             sustituye los `__propiedad__` tambien en los NOMBRES de fichero y de carpeta, no solo
+             dentro del contenido.
         -->
         <fileSet encoding="UTF-8" filtered="true">
-            <directory>k8s</directory>
+            <directory>helm</directory>
             <includes>
                 <include>**/*.yaml</include>
+                <include>**/*.tpl</include>
                 <include>**/*.md</include>
             </includes>
         </fileSet>

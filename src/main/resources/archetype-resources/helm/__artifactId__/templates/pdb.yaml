@@ -1,0 +1,15 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+# Impide que un drenaje de nodos (una actualizacion del cluster, por ejemplo) se lleve todas las
+# replicas a la vez y deje el servicio caido durante el mantenimiento.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" . | nindent 6 }}
+{{- end }}

@@ -1,0 +1,16 @@
+# Configuracion NO secreta de la aplicacion.
+#
+# Lo que va aqui son valores que cambian por entorno pero que no importa que se vean. Todo lo que sea
+# credencial va en un Secret creado fuera de git (ver values.yaml).
+#
+# El Deployment lleva una anotacion con el checksum de este fichero: si cambia, los pods se reinician.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-config
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+data:
+  {{- range $clave, $valor := .Values.config }}
+  {{ $clave }}: {{ $valor | quote }}
+  {{- end }}

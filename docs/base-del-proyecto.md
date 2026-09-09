@@ -286,6 +286,12 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   *sobre* el arquetipo; el de `archetype-resources/.devcontainer/` es la plantilla que se copia a los
   proyectos generados. Tocar uno no cambia el otro. (Es el mismo tipo de despiste que G14, pero con los
   devcontainers.)
+- **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
+  Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
+  que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
+  peor momento y lejos de donde se causo. Segundo: `regexReplaceAll` toma `(regex, INPUT, replacement)`,
+  asi que usarlo en una tuberia mete el valor como *replacement* y el nombre sale **vacio**, tambien sin
+  error. Los dos los caza `helm lint`, que por eso conviene ejecutar y no dar por bueno el template.
 - **G28 · `<release>` de `maven-metadata.xml` INCLUYE pre-releases.** Preguntando por la ultima version
   salian Boot `4.2.0-M1`, MapStruct `1.7.0.Beta2` y jar-plugin `4.0.0-beta-1`. Hay que filtrar
   (`grep -viE "alpha|beta|-M[0-9]|-RC|snapshot"` sobre `<version>` y quedarse con la ultima), o se
@@ -362,6 +368,30 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
         construyó Flyway. Eso es exactamente el detector de deriva de D2, funcionando.
       · Ryuk arrancó sin el `Could not connect` de G5 y no dejó contenedores huérfanos.
       Hasta aquí, todo lo que se decidió está ejercitado, no solo escrito.
+### D10 · Despliegue con Helm, y fuera skaffold (2026-09-09)
+
+**Skaffold: eliminado.** No por obsoleto —sigue mantenido (v2.22.0, julio de 2026)— sino por el criterio
+nº2 de este documento: se enviaban **937 lineas de documentacion y 6 perfiles** para una herramienta que
+**nunca se habia usado**, y cuyos perfiles `staging` y `prod` apuntaban a un chart de Helm que no existia.
+Su valor real es iterar *contra un cluster*; el bucle de este arquetipo es `make run` con compose.
+Volver a anadirlo el dia que haga falta son unas 50 lineas de YAML.
+
+**`k8s/` con kustomize → chart de Helm con values por entorno.** El chart parametriza de verdad
+(`values-dev.yaml`, `values-prod.yaml`) en vez de parchear YAML por capas.
+
+**Y se quitan los despliegues de Postgres y Redis**, que eran una trampa: el ejemplo desplegaba Postgres
+como `Deployment` con un `PersistentVolumeClaim`. Eso es perdida de datos esperando a pasar —no tolera
+escalado ni actualizaciones rolling— y como *ejemplo a copiar* es peligroso. En un cluster real va un
+servicio gestionado o un operador; el local ya lo cubre `compose-app.yml`.
+
+**Verificado con Helm de verdad** (`helm lint` + `helm template` en un contenedor efimero), no por
+inspeccion. Es lo que destapo G29.
+
+**Que la reabriria.** Necesitar iterar contra un cluster a diario: ahi skaffold, Tilt o DevSpace vuelven a
+tener sentido.
+
+---
+
 - [x] **Modernizar versiones.** ✅ 2026-09-09. Spring Boot 4.0.2 → **4.1.1**, Spring Cloud 2025.1.0 →
       2025.1.3, springdoc 3.0.1 → 3.1.1; y en el pom del propio arquetipo: archetype-plugin 3.2.1 →
       3.4.1, jar 3.4.2 → 3.5.1, gpg 3.1.0 → 3.2.8, central-publishing 0.9.0 → 0.11.0.

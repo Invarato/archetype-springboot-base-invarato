@@ -1,0 +1,97 @@
+# Valores POR DEFECTO del chart.
+#
+# Estan pensados para ser un punto de partida seguro, no para produccion tal cual. Cada entorno los
+# sobreescribe con su fichero: `values-dev.yaml`, `values-prod.yaml`...
+#
+#   helm upgrade --install ${artifactId} ./helm/${artifactId} -f helm/${artifactId}/values-prod.yaml
+#
+# ⚠️ Aqui NO se despliegan Postgres ni Redis. Es deliberado: una base de datos dentro del cluster con un
+# Deployment normal es perdida de datos esperando a pasar (no tolera escalado ni actualizaciones
+# rolling). Usa un servicio gestionado o un operador; para desarrollo local ya esta `compose-app.yml`.
+
+replicaCount: 1
+
+image:
+  repository: ${artifactId}
+  # La etiqueta la pone el despliegue (--set image.tag=X.Y.Z). `latest` en un cluster impide saber que
+  # version esta corriendo y hace irrepetible un rollback.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Perfil de Spring y variables de entorno. Todo lo que la aplicacion lee con una variable con valor por
+# defecto se puede ajustar aqui sin reconstruir la imagen.
+env:
+  SPRING_PROFILES_ACTIVE: prod
+  # Emisor de tokens. Sin esto la aplicacion NO ARRANCA, y lo dice claramente al fallar.
+  OAUTH2_ISSUER_URI: ""
+  CORS_ALLOWED_ORIGINS: ""
+  LOG_LEVEL: INFO
+
+# Configuracion no secreta que acaba en un ConfigMap. Cambiarla reinicia los pods (el Deployment lleva
+# el checksum de este ConfigMap en una anotacion).
+config: {}
+
+# Datos de conexion que no son secretos.
+database:
+  host: ""
+  port: 5432
+  name: postgres
+
+# ⚠️ El secreto NO se declara aqui. El chart espera encontrar un Secret ya existente en el namespace,
+# creado fuera de git (gestor de secretos de la nube, External Secrets, Sealed Secrets o, como minimo,
+# `kubectl create secret`). Poner credenciales en un values.yaml versionado las publica en el historial
+# para siempre, y rotarlas despues no las borra de ahi.
+existingSecret: ${artifactId}-secret
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    # Sin limite de memoria, un pod que fuga se lleva por delante al nodo entero.
+    memory: 1Gi
+    # ⚠️ Sin limite de CPU a proposito: el limite de CPU no protege al nodo (para eso esta `requests`) y
+    # en cambio provoca throttling que se manifiesta como latencia inexplicable. Ponlo solo si sabes por
+    # que lo necesitas.
+
+# Sondas. Las rutas son las que expone Spring Boot Actuator y son publicas en la configuracion de
+# seguridad: si dejaran de serlo, el pod nunca llegaria a marcarse como vivo.
+probes:
+  # startupProbe da margen al arranque SIN relajar liveness. Sin ella, o pones un liveness lento (y
+  # tardas en detectar un cuelgue real) o matas el pod mientras arranca.
+  startup:
+    failureThreshold: 30
+    periodSeconds: 5
+  liveness:
+    periodSeconds: 10
+  readiness:
+    periodSeconds: 5
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# PodDisruptionBudget: impide que un drenaje de nodos se lleve todas las replicas a la vez.
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+ingress:
+  enabled: false
+  className: nginx
+  host: ${artifactId}.local
+  annotations: {}
+
+# Contexto de seguridad del pod. Son los valores que pide cualquier revision de seguridad y que cuesta
+# mucho mas anadir a posteriori, cuando la aplicacion ya asume que puede escribir donde quiera.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false

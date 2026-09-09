@@ -71,15 +71,24 @@ $c3_ok && ok "C3 los devcontainer.json parsean"
   && ok "C4b .mvn/wrapper/maven-wrapper.properties presente" \
   || fail "C4b falta .mvn/wrapper/maven-wrapper.properties (mvnw no sabria que Maven descargar)"
 
-# ── C5 · Lo que declara skaffold existe ─────────────────────────────────────────────────────
-# Fallo real: skaffold.yaml se generaba y k8s/ no (sus fileSet estaban comentados en el metadata), asi
-# que el proyecto nacia apuntando a manifiestos inexistentes.
-if [ -f "$GEN/skaffold.yaml" ]; then
+# ── C5 · El chart de Helm esta completo ─────────────────────────────────────────────────────
+# Fallo real, y dos veces seguidas: el proyecto nacia declarando despliegues que apuntaban a ficheros
+# que no se generaban. Primero un skaffold.yaml apuntando a un k8s/ que no viajaba; despues, los
+# perfiles staging y prod de ese mismo skaffold apuntando a un chart de Helm que no existio nunca.
+CHART=$(find "$GEN/helm" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)
+if [ -z "$CHART" ]; then
+  fail "C5 no se ha generado ningun chart en helm/"
+else
   c5_ok=true
-  while IFS= read -r m; do
-    [ -e "$GEN/$m" ] || { fail "C5 skaffold.yaml referencia '$m', que no existe"; c5_ok=false; }
-  done < <(grep -oE '(^|[[:space:]])- k8s/[A-Za-z0-9._/-]+' "$GEN/skaffold.yaml" | sed 's/.*- //' | grep -v '\*' | sort -u)
-  $c5_ok && ok "C5 los manifiestos que declara skaffold existen"
+  for f in Chart.yaml values.yaml templates/deployment.yaml templates/service.yaml templates/_helpers.tpl; do
+    [ -f "$CHART/$f" ] || { fail "C5 falta $f en el chart"; c5_ok=false; }
+  done
+  # El nombre del directorio tiene que haberse sustituido. Un `__artifactId__` literal significa que el
+  # renombrado de directorios del arquetipo no funciono, y el chart seria inservible.
+  case "$(basename "$CHART")" in
+    *__*) fail "C5 el chart conserva un placeholder en el nombre: $(basename "$CHART")"; c5_ok=false ;;
+  esac
+  $c5_ok && ok "C5 el chart de Helm esta completo ($(basename "$CHART"))"
 fi
 
 # ── C7 · El contrato existe y no publica entidades ──────────────────────────────────────────

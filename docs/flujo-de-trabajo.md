@@ -47,7 +47,7 @@ nos comimos**, no a una hipótesis; los códigos `G*` remiten a
 | **C2** | Los `.md` generados tienen las **mismas líneas** que su plantilla | G17: en un fichero filtrado, Velocity trata `##` como comentario de línea. `MAKEFILE.md` llegaba con 54 líneas menos y **cero cabeceras**; `SKAFFOLD.md`, con 76 menos. El fichero existe y casi todo el texto sigue ahí, así que a simple vista parece correcto. |
 | **C3** | Los `devcontainer.json` parsean | G20: los que se enviaban tenían las claves **sin comillas**. No eran JSON válido, así que ese devcontainer nunca llegó a abrir. |
 | **C4** | `mvnw` es ejecutable y tiene sus `.mvn/wrapper/*.properties` | G16 y G18: se copiaba el script sin su configuración, el `.gitignore` excluía `/.mvn/` entero, y los arquetipos no conservan el bit de ejecución. |
-| **C5** | Los manifiestos que declara `skaffold.yaml` existen | G6: `skaffold.yaml` se generaba y `k8s/` no, así que el proyecto nacía apuntando a ficheros inexistentes. |
+| **C5** | El chart de Helm está completo y su directorio no conserva placeholders | G6, dos veces: primero un `skaffold.yaml` apuntando a un `k8s/` que no viajaba; después, los perfiles staging y prod de ese mismo skaffold apuntando a un chart de Helm que no existió nunca. |
 | **C6** | No viajan ficheros muertos conocidos | `__gitignore` y `old__Dockerfile` se generaban sin que nadie los usara. |
 
 ⚠️ **Una comprobación que nunca falla no vale nada.** Si añades una, pruébala rompiendo el proyecto generado

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: ${artifactId}
+description: Chart de despliegue de ${artifactId}
+type: application
+
+# version   = version del CHART (cambia cuando cambian las plantillas)
+# appVersion = version de la APLICACION (la del jar y la imagen)
+#
+# Son cosas distintas y conviene no mezclarlas: puedes corregir una plantilla sin publicar la aplicacion,
+# y al reves. En CI, appVersion se sobreescribe con la version que se esta desplegando:
+#   helm upgrade --install ... --set image.tag=1.2.3
+version: 0.1.0
+appVersion: "0.0.0"
