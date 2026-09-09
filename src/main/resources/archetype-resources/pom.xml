@@ -9,7 +9,7 @@
 
       Por que multi-modulo teniendo un solo servicio: el sitio donde viven el contrato OpenAPI y los clientes
       generados (Java, Python, stubs). Montarlo al generar cuesta un pom y un nivel de carpeta; hacerlo
-      despues es un refactor que toca Dockerfile, compose, k8s, skaffold y CI a la vez.
+      despues es un refactor que toca Dockerfile, compose, el chart de despliegue y CI a la vez.
     -->
     <parent>
         <groupId>org.springframework.boot</groupId>

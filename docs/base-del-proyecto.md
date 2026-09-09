@@ -36,14 +36,16 @@ Destino de lo generado: microservicios distribuibles, contenedorizados y despleg
 ├── .mvn/maven.config          -Drevision por defecto (ver D3, y el gotcha G8)
 ├── pom.xml                    padre, packaging pom
 ├── app/                       <artifactId>-app · el microservicio Spring Boot
-├── contract/                  <artifactId>-contract · openapi.json y, cuando haga falta,
-│                              clientes Java/Python y stubs generados
-├── compose-app.yml · Dockerfile · k8s/ · skaffold.yaml
+├── contract/                  <artifactId>-contract · el openapi.json, versionado y empaquetado
+├── client-java/               cliente Java generado del contrato
+├── client-python/             cliente Python generado del contrato
+├── helm/<artifactId>/         chart de despliegue, con values por entorno
+├── compose-app.yml · Dockerfile · .devcontainer/
 ```
 
 **Por qué.** La necesidad real y repetida son **clientes Java y Python, stubs y el `openapi.json`**, que hoy
 no tienen dónde vivir. Y el coste está muy mal repartido en el tiempo: montarlo al generar cuesta un pom y un
-nivel de carpeta; hacerlo después es un refactor que toca `Dockerfile`, `compose`, `k8s`, `skaffold` y CI a
+nivel de carpeta; hacerlo después es un refactor que toca `Dockerfile`, `compose`, el despliegue y CI a
 la vez. Se paga ahora, que es cuando es barato.
 
 **Qué la reabriría.** Que en la práctica nadie llegue a usar `contract/` en varios proyectos seguidos.
@@ -215,6 +217,28 @@ importante es lo otro: es el **primer paso hacia la vía de actualización que a
 
 ---
 
+### D10 · Despliegue con Helm, y fuera skaffold (2026-09-09)
+
+**Skaffold: eliminado.** No por obsoleto —sigue mantenido (v2.22.0, julio de 2026)— sino por el criterio
+nº2 de este documento: se enviaban **937 lineas de documentacion y 6 perfiles** para una herramienta que
+**nunca se habia usado**, y cuyos perfiles `staging` y `prod` apuntaban a un chart de Helm que no existia.
+Su valor real es iterar *contra un cluster*; el bucle de este arquetipo es `make run` con compose.
+Volver a anadirlo el dia que haga falta son unas 50 lineas de YAML.
+
+**`k8s/` con kustomize → chart de Helm con values por entorno.** El chart parametriza de verdad
+(`values-dev.yaml`, `values-prod.yaml`) en vez de parchear YAML por capas.
+
+**Y se quitan los despliegues de Postgres y Redis**, que eran una trampa: el ejemplo desplegaba Postgres
+como `Deployment` con un `PersistentVolumeClaim`. Eso es perdida de datos esperando a pasar —no tolera
+escalado ni actualizaciones rolling— y como *ejemplo a copiar* es peligroso. En un cluster real va un
+servicio gestionado o un operador; el local ya lo cubre `compose-app.yml`.
+
+**Verificado con Helm de verdad** (`helm lint` + `helm template` en un contenedor efimero), no por
+inspeccion. Es lo que destapo G29.
+
+**Que la reabriria.** Necesitar iterar contra un cluster a diario: ahi skaffold, Tilt o DevSpace vuelven a
+tener sentido.
+
 ## Tropiezos ya pagados
 
 Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.**
@@ -368,29 +392,6 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
         construyó Flyway. Eso es exactamente el detector de deriva de D2, funcionando.
       · Ryuk arrancó sin el `Could not connect` de G5 y no dejó contenedores huérfanos.
       Hasta aquí, todo lo que se decidió está ejercitado, no solo escrito.
-### D10 · Despliegue con Helm, y fuera skaffold (2026-09-09)
-
-**Skaffold: eliminado.** No por obsoleto —sigue mantenido (v2.22.0, julio de 2026)— sino por el criterio
-nº2 de este documento: se enviaban **937 lineas de documentacion y 6 perfiles** para una herramienta que
-**nunca se habia usado**, y cuyos perfiles `staging` y `prod` apuntaban a un chart de Helm que no existia.
-Su valor real es iterar *contra un cluster*; el bucle de este arquetipo es `make run` con compose.
-Volver a anadirlo el dia que haga falta son unas 50 lineas de YAML.
-
-**`k8s/` con kustomize → chart de Helm con values por entorno.** El chart parametriza de verdad
-(`values-dev.yaml`, `values-prod.yaml`) en vez de parchear YAML por capas.
-
-**Y se quitan los despliegues de Postgres y Redis**, que eran una trampa: el ejemplo desplegaba Postgres
-como `Deployment` con un `PersistentVolumeClaim`. Eso es perdida de datos esperando a pasar —no tolera
-escalado ni actualizaciones rolling— y como *ejemplo a copiar* es peligroso. En un cluster real va un
-servicio gestionado o un operador; el local ya lo cubre `compose-app.yml`.
-
-**Verificado con Helm de verdad** (`helm lint` + `helm template` en un contenedor efimero), no por
-inspeccion. Es lo que destapo G29.
-
-**Que la reabriria.** Necesitar iterar contra un cluster a diario: ahi skaffold, Tilt o DevSpace vuelven a
-tener sentido.
-
----
 
 - [x] **Modernizar versiones.** ✅ 2026-09-09. Spring Boot 4.0.2 → **4.1.1**, Spring Cloud 2025.1.0 →
       2025.1.3, springdoc 3.0.1 → 3.1.1; y en el pom del propio arquetipo: archetype-plugin 3.2.1 →
@@ -408,10 +409,8 @@ tener sentido.
       una comprobación que nunca falla no vale nada.
       De paso murió `restart_build.bash` (duplicado literal del Makefile) y el `MAKEFILE.md` de la raíz
       (509 líneas documentando targets que ya no existían).
-- [ ] **Decidir sobre `k8s/` y `skaffold`.** Ya no están rotos (se generan), pero **nunca se han usado**.
-      La pregunta abierta no es cómo mejorarlos, es **quitarlos o hacerlos reales**: andamio que nadie
-      ejercita se pudre. Skaffold se usa en otros proyectos con minikube; hay que mirar si sigue siendo la
-      opción recomendable hoy antes de decidir.
+- [x] **Decidir sobre `k8s/` y skaffold.** ✅ 2026-09-09 (D10): fuera skaffold, y el despliegue pasa a un
+      chart de Helm con values por entorno. Verificado con `helm lint` y `helm template` de verdad.
 - [ ] **Autoconfiguración para el cliente Java.** Hoy `client-java` es código generado en crudo: quien lo
       use tiene que instanciar el `ApiClient`, ponerle la URL base y cablear el token a mano, en cada
       proyecto consumidor. Con un `@AutoConfiguration` + `@ConfigurationProperties` dentro del módulo,
