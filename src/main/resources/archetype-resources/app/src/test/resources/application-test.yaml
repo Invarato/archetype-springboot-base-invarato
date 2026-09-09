@@ -1,4 +1,9 @@
-# Configuracion de TESTS.
+# Configuracion del perfil `test`: se SUPERPONE a application.yaml, no lo sustituye.
+#
+# ⚠️ Antes esto se llamaba application.yaml y vivia en src/test/resources. Mismo nombre = el del
+# classpath de test TAPA al principal, asi que la configuracion de la aplicacion (actuator, logging,
+# nombre de la aplicacion...) NO se aplicaba en los tests y no habia forma de notarlo. Con el sufijo
+# del perfil, Spring carga el principal y le superpone este.
 #
 # El esquema de los tests lo construye FLYWAY desde cero sobre una base efimera, y despues Hibernate lo
 # valida contra las entidades. Ese ciclo completo es el ORACULO del esquema (docs/migraciones.md): si pasa,
@@ -22,6 +27,12 @@ spring:
 
   cache:
     type: none
+
+# springdoc encendido en tests: es lo que permite a OpenApiContractIT pedir /v3/api-docs y comprobar que
+# el contrato versionado sigue coincidiendo con el codigo. En produccion sigue apagado.
+springdoc:
+  api-docs:
+    enabled: true
 
 # ⚠️ La seguridad NO se desactiva en los tests. Si se desactivara, los tests no estarian probando la
 # aplicacion que se despliega, y los fallos de autorizacion aparecerian por primera vez en produccion.

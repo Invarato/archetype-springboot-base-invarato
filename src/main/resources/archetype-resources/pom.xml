@@ -26,10 +26,22 @@
     <name>${artifactId}</name>
     <description>descripcion ${artifactId}</description>
 
+    <!--
+      ⚠️ EL ORDEN IMPORTA, y va al reves de lo que parece.
+
+      Aqui el contrato se genera DESDE EL CODIGO (code-first): escribes el controlador, springdoc deriva
+      el OpenAPI de las anotaciones y un test lo compara con el fichero versionado. Por eso `app` va
+      PRIMERO: es quien produce el contrato, no quien lo consume.
+
+      (En contract-first seria al reves: se escribe el openapi.json a mano y de ahi se generan las
+      interfaces del servidor. Se descarto porque el objetivo de este arquetipo es desarrollar rapido, y
+      escribir Java y que el contrato caiga solo es el camino corto.)
+
+      Maven ordena por dependencias y, a igualdad, por este orden de declaracion.
+    -->
     <modules>
-        <!-- contract va PRIMERO: app puede depender de el (clientes/stubs generados), nunca al reves. -->
-        <module>contract</module>
         <module>app</module>
+        <module>contract</module>
     </modules>
 
     <properties>

@@ -1,5 +1,5 @@
 .PHONY: help clean build test run run-dev run-prod stop docker-up docker-down docker-restart \
-        db-baseline db-info token package install \
+        db-baseline db-info token openapi package install \
         deps-tree deps-updates verify fmt check docker-build docker-run logs actuator-health
 
 # Colors for output
@@ -53,6 +53,9 @@ help:
 	@echo ""
 	@echo "$(YELLOW)🔐 Seguridad:$(NC)"
 	@echo "  make token            Acuña un JWT de desarrollo (perfil dev)"
+	@echo ""
+	@echo "$(YELLOW)📄 Contrato:$(NC)"
+	@echo "  make openapi          Regenera el contrato OpenAPI desde el codigo"
 	@echo ""
 	@echo "$(YELLOW)📦 Dependencies Commands:$(NC)"
 	@echo "  make deps-tree        Show dependency tree"
@@ -286,3 +289,19 @@ token:
 	echo ""; \
 	echo "$(YELLOW)Valido 1 hora. Uso:$(NC)"; \
 	echo "  curl -H \"Authorization: Bearer $$tok\" http://localhost:8080/api/v1/examples"
+
+# ============================================
+# Contrato OpenAPI
+# ============================================
+# El contrato se genera DESDE EL CODIGO (code-first) y vive versionado en
+# contract/src/main/resources/openapi/openapi.json. Un test lo compara en cada build: si la API cambia
+# sin actualizar el fichero, el build se pone rojo. No es para impedir cambiar la API, es para que
+# ningun cambio de contrato pase inadvertido — renombrar un campo de un DTO rompe a todos los clientes.
+#
+# Este target acepta el cambio. El openapi.json resultante se commitea JUNTO al cambio de codigo, que es
+# lo que hace visible en la revision que la API se ha movido.
+openapi:
+	@echo "$(GREEN)📄 Regenerando el contrato OpenAPI desde el codigo...$(NC)"
+	$(MVN) -pl app -am verify -Dopenapi.update=true
+	@echo "$(GREEN)✓ contract/src/main/resources/openapi/openapi.json actualizado$(NC)"
+	@echo "$(YELLOW)→ Revisa el diff y commitealo junto al cambio de codigo.$(NC)"
