@@ -138,9 +138,21 @@ receta verificada; ahí se recupera aislamiento sin perder Docker.
 
 ### D6 · Java 25 (LTS) y Spring Boot 4.1.x (2026-09-09)
 
-Java **25 LTS**: ni bajar de 25 ni subir a 26 (no-LTS). Boot **4.1.1** (el arquetipo venía en 4.0.2). El
-devcontainer trae Temurin 25 precisamente para que el arquetipo se pruebe con el mismo JDK que usarán sus
-proyectos.
+Java **25 LTS**: ni bajar de 25 ni subir a 26. Boot **4.1.1** (el arquetipo venía en 4.0.2). El devcontainer
+trae Temurin 25 precisamente para que el arquetipo se pruebe con el mismo JDK que usarán sus proyectos.
+
+**Sobre subir a JDK 26** (se planteó al verlo disponible en Spring Initializr, 2026-09-09): **no**.
+
+- **26 no es LTS.** GA el 17 de marzo de 2026, con seis meses de soporte que terminan al salir JDK 27 —
+  o sea, ahora mismo. Adoptarlo sería estrenar un JDK que ya deja de recibir actualizaciones.
+- **El siguiente LTS es Java 29** (septiembre de 2027). 26, 27 y 28 son todos de vida corta.
+- Boot 4.1 lo *soporta* (hasta 26 inclusive), pero su **soporte de primera clase y el testing de
+  native-image están sobre Java 25**.
+- Que Initializr lo ofrezca no es señal de que convenga aquí: Initializr sirve proyectos individuales, que
+  pueden saltar cada seis meses. Esto es la **base de muchos servicios**, y cada uno heredaría esa noria.
+
+**Qué la reabriría.** La salida de **Java 29 LTS** (sept. 2027). Para experimentar con un no-LTS antes, que
+sea en un servicio concreto cambiando `<java.version>`, no en el arquetipo.
 
 ---
 
@@ -260,9 +272,15 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
       Hasta aquí, todo lo que se decidió está ejercitado, no solo escrito.
 - [ ] **Modernizar versiones**: Boot 4.0.2 → 4.1.1 y el resto de la tabla del onboarding. Incluye subir el
       Maven wrapper (hoy 3.2.0) y los plugins del arquetipo (archetype 3.2.1 → 3.4.1, gpg, central-publishing).
-- [ ] **CI.** No existe `.github/`. El ciclo `generate → compile → verify` con Testcontainers tiene que
-      correr en CI sobre una VM con Docker: así el perfil hardened no necesita Docker nunca y el gate no
-      depende de que alguien se acuerde de cambiar de perfil. **Es el hueco más grande que queda.**
+- [x] **CI y el gate.** ✅ 2026-09-09. `make verify` es ahora EL GATE (clean → build → generate → check →
+      `mvn verify` del generado) y `.github/workflows/verify.yml` corre **exactamente ese comando** en cada
+      push a `main`, cada PR, a mano y semanalmente. Que sea el mismo comando no es estética: si el gate
+      local y el CI divergieran, el CI dejaría de significar nada.
+      Además `scripts/check-generated.sh` convierte seis gotchas en comprobaciones automáticas (C1..C6, ver
+      [flujo-de-trabajo.md](flujo-de-trabajo.md)), **todas verificadas rompiendo el proyecto a propósito**:
+      una comprobación que nunca falla no vale nada.
+      De paso murió `restart_build.bash` (duplicado literal del Makefile) y el `MAKEFILE.md` de la raíz
+      (509 líneas documentando targets que ya no existían).
 - [ ] **Decidir sobre `k8s/` y `skaffold`.** Ya no están rotos (se generan), pero **nunca se han usado**.
       La pregunta abierta no es cómo mejorarlos, es **quitarlos o hacerlos reales**: andamio que nadie
       ejercita se pudre. Skaffold se usa en otros proyectos con minikube; hay que mirar si sigue siendo la
