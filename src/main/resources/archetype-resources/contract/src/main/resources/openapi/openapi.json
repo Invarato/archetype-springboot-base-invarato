@@ -192,7 +192,7 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
+          "201" : {
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -201,7 +201,7 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "Created"
           }
         },
         "tags" : [ "example-controller" ]
@@ -299,8 +299,8 @@
           }
         } ],
         "responses" : {
-          "200" : {
-            "description" : "OK"
+          "204" : {
+            "description" : "No Content"
           }
         },
         "tags" : [ "example-controller" ]
@@ -352,8 +352,8 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
-            "description" : "OK"
+          "204" : {
+            "description" : "No Content"
           }
         },
         "tags" : [ "example-controller" ]

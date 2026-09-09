@@ -4,6 +4,7 @@ import ${groupId}.dtos.requests.MyTableRequest;
 import ${groupId}.dtos.responses.MyTableResponse;
 import ${groupId}.dtos.responses.SimpleApiResponse;
 import ${groupId}.entities.MyTable;
+import ${groupId}.exceptions.ResourceNotFoundException;
 import ${groupId}.mappers.MyTableMapper;
 import ${groupId}.repositories.MyTableRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 /**
  * Ejemplo de servicio.
@@ -84,6 +84,6 @@ public class ExampleService {
 
     private MyTable buscarOFallar(Long id, String mensaje) {
         return myTableRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException(mensaje + id));
+                .orElseThrow(() -> new ResourceNotFoundException(mensaje + id));
     }
 }

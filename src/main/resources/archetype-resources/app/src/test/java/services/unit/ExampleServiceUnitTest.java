@@ -3,6 +3,7 @@ package ${groupId}.services.unit;
 import ${groupId}.dtos.requests.MyTableRequest;
 import ${groupId}.dtos.responses.MyTableResponse;
 import ${groupId}.entities.MyTable;
+import ${groupId}.exceptions.ResourceNotFoundException;
 import ${groupId}.mappers.MyTableMapper;
 import ${groupId}.repositories.MyTableRepository;
 import ${groupId}.services.ExampleService;
@@ -13,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -97,7 +97,7 @@ class ExampleServiceUnitTest extends BaseServiceUnitTest {
     void testGetEjemploById_NoEncontrado() {
         when(myTableRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> exampleService.getEjemploById(1L));
+        assertThrows(ResourceNotFoundException.class, () -> exampleService.getEjemploById(1L));
         verify(myTableRepository).findById(1L);
     }
 
@@ -116,7 +116,7 @@ class ExampleServiceUnitTest extends BaseServiceUnitTest {
     void testDeleteEjemploById_NoEncontrado() {
         when(myTableRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> exampleService.deleteEjemploById(1L));
+        assertThrows(ResourceNotFoundException.class, () -> exampleService.deleteEjemploById(1L));
         // Y sobre todo: no se borra nada si no existia.
         verify(myTableRepository, never()).delete(any());
     }

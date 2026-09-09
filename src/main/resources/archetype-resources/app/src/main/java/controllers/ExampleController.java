@@ -1,6 +1,5 @@
 package ${groupId}.controllers;
 
-import ${groupId}.controllers.common.ResponseUtils;
 import ${groupId}.dtos.requests.MyTableRequest;
 import ${groupId}.dtos.responses.MyTableResponse;
 import ${groupId}.dtos.responses.SimpleApiResponse;
@@ -15,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,11 +46,12 @@ public class ExampleController {
 
     // ── CRUD de ejemplo ──────────────────────────────────────────────────────────────────────
 
+    // La cabecera Location la pone ResourceResponseAdvice a partir de lo que se devuelve: el
+    // controlador no construye URLs. Basta con declarar el 201.
     @PostMapping
-    public ResponseEntity<Long> createNew(@Valid @RequestBody MyTableRequest request) {
-        Long id = exampleService.saveSimple(request);
-        // 201 con cabecera Location apuntando al recurso creado, que es lo que espera un cliente REST.
-        return ResponseUtils.responseEntityCreated(id);
+    @ResponseStatus(HttpStatus.CREATED)
+    public Long createNew(@Valid @RequestBody MyTableRequest request) {
+        return exampleService.saveSimple(request);
     }
 
     @GetMapping
@@ -64,15 +65,15 @@ public class ExampleController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(@PathVariable Long id, @Valid @RequestBody MyTableRequest request) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void update(@PathVariable Long id, @Valid @RequestBody MyTableRequest request) {
         exampleService.updateEjemploById(id, request);
-        return ResponseUtils.responseNoContent();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
         exampleService.deleteEjemploById(id);
-        return ResponseUtils.responseNoContent();
     }
 
     /**
