@@ -286,6 +286,10 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   *sobre* el arquetipo; el de `archetype-resources/.devcontainer/` es la plantilla que se copia a los
   proyectos generados. Tocar uno no cambia el otro. (Es el mismo tipo de despiste que G14, pero con los
   devcontainers.)
+- **G28 · `<release>` de `maven-metadata.xml` INCLUYE pre-releases.** Preguntando por la ultima version
+  salian Boot `4.2.0-M1`, MapStruct `1.7.0.Beta2` y jar-plugin `4.0.0-beta-1`. Hay que filtrar
+  (`grep -viE "alpha|beta|-M[0-9]|-RC|snapshot"` sobre `<version>` y quedarse con la ultima), o se
+  acaba fijando un milestone en la base de todos los servicios. Complementa a G1.
 - **G26 · Un `application.yaml` en `src/test/resources` TAPA al de `src/main/resources`.** Mismo nombre,
   y el classpath de test va primero: Spring carga el primero que encuentra y el principal no se lee
   NUNCA. Consecuencia: la configuracion de la aplicación (nombre, actuator, logging) no se aplicaba en
@@ -358,8 +362,13 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
         construyó Flyway. Eso es exactamente el detector de deriva de D2, funcionando.
       · Ryuk arrancó sin el `Could not connect` de G5 y no dejó contenedores huérfanos.
       Hasta aquí, todo lo que se decidió está ejercitado, no solo escrito.
-- [ ] **Modernizar versiones**: Boot 4.0.2 → 4.1.1 y el resto de la tabla del onboarding. Incluye subir el
-      Maven wrapper (hoy 3.2.0) y los plugins del arquetipo (archetype 3.2.1 → 3.4.1, gpg, central-publishing).
+- [x] **Modernizar versiones.** ✅ 2026-09-09. Spring Boot 4.0.2 → **4.1.1**, Spring Cloud 2025.1.0 →
+      2025.1.3, springdoc 3.0.1 → 3.1.1; y en el pom del propio arquetipo: archetype-plugin 3.2.1 →
+      3.4.1, jar 3.4.2 → 3.5.1, gpg 3.1.0 → 3.2.8, central-publishing 0.9.0 → 0.11.0.
+      ⚠️ **Las versiones se sacan filtrando pre-releases**: `<release>` de `maven-metadata.xml` incluye
+      milestones y betas (decia Boot `4.2.0-M1`, MapStruct `1.7.0.Beta2`, jar-plugin `4.0.0-beta-1`).
+      Verificado ademas arrancando la aplicacion, no solo con el gate: arranca en 4s, la seguridad
+      responde 401/200/201 y `/actuator/prometheus` sigue protegido.
 - [x] **CI y el gate.** ✅ 2026-09-09. `make verify` es ahora EL GATE (clean → build → generate → check →
       `mvn verify` del generado) y `.github/workflows/verify.yml` corre **exactamente ese comando** en cada
       push a `main`, cada PR, a mano y semanalmente. Que sea el mismo comando no es estética: si el gate
