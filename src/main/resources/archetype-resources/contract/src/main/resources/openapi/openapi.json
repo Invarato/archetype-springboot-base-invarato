@@ -55,7 +55,28 @@
         },
         "type" : "object"
       },
-      "PageMyTableResponse" : {
+      "PageMetadata" : {
+        "properties" : {
+          "number" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PagedModelMyTableResponse" : {
         "properties" : {
           "content" : {
             "items" : {
@@ -63,66 +84,8 @@
             },
             "type" : "array"
           },
-          "empty" : {
-            "type" : "boolean"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
-          "number" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "numberOfElements" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "size" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "totalElements" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "totalPages" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
-      "PageableObject" : {
-        "properties" : {
-          "offset" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "pageNumber" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "pageSize" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "paged" : {
-            "type" : "boolean"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "unpaged" : {
-            "type" : "boolean"
+          "page" : {
+            "$ref" : "#/components/schemas/PageMetadata"
           }
         },
         "type" : "object"
@@ -133,20 +96,6 @@
           "message" : {
             "description" : "texto del mensaje",
             "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "SortObject" : {
-        "properties" : {
-          "empty" : {
-            "type" : "boolean"
-          },
-          "sorted" : {
-            "type" : "boolean"
-          },
-          "unsorted" : {
-            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -161,7 +110,7 @@
     }
   },
   "info" : {
-    "title" : "${artifactId} API",
+    "title" : "projectTestForAnalysis API",
     "version" : "v1"
   },
   "openapi" : "3.1.0",
@@ -293,7 +242,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PageMyTableResponse"
+                  "$ref" : "#/components/schemas/PagedModelMyTableResponse"
                 }
               }
             },

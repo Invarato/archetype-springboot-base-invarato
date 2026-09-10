@@ -73,6 +73,33 @@ class ExampleControllerIT extends BaseControllerIT {
                 .andExpect(jsonPath("$[1].name").value("Name2"));
     }
 
+    /**
+     * Fija la <b>forma</b> del JSON paginado, que es contrato publico.
+     *
+     * <p>Sin este test el endpoint devolvia un {@code Page} serializado en crudo: {@code pageable},
+     * {@code sort}, {@code first}, {@code last}... la estructura interna de Spring Data, que cambia
+     * entre versiones y arrastraria a los clientes con ella. Las dos ultimas comprobaciones son las
+     * importantes: no miran lo que hay, miran lo que <b>no debe haber</b>.</p>
+     */
+    @Test
+    void listaPaginadoConFormaEstable() throws Exception {
+        crearEjemplo("Uno", "A", "D");
+        crearEjemplo("Dos", "B", "E");
+
+        mockMvc.perform(get("/api/v1/examples/paginated").param("size", "1").with(jwt()))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Uno"))
+                .andExpect(jsonPath("$.page.size").value(1))
+                .andExpect(jsonPath("$.page.number").value(0))
+                .andExpect(jsonPath("$.page.totalElements").value(2))
+                .andExpect(jsonPath("$.page.totalPages").value(2))
+                // Lo interno de Page no puede asomar por la respuesta.
+                .andExpect(jsonPath("$.pageable").doesNotExist())
+                .andExpect(jsonPath("$.sort").doesNotExist());
+    }
+
     @Test
     void actualiza() throws Exception {
         Long generatedId = crearEjemplo("Name", "Surname", "Description");

@@ -10,10 +10,10 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -133,9 +133,15 @@ public class ExampleController {
      *
      * @return una página de registros con sus metadatos de paginación
      */
-    // NOTA INTERNA: si se devuelve `Page` en la respuesta, hace falta anadir en MainApplication
-    // @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO), o el JSON
-    // expondra la estructura interna de Page y cambiara al subir de version de Spring.
+    // NOTA INTERNA — por que `PagedModel` y no `Page` como tipo de retorno:
+    //
+    // MainApplication activa VIA_DTO, que ya arregla el JSON en tiempo de ejecucion. Pero springdoc
+    // documenta el tipo DECLARADO, no lo que acaba saliendo por el cable. Devolviendo `Page` el
+    // contrato describia un `PageMyTableResponse` con 11 campos internos (`pageable`, `sort`, `first`,
+    // `last`...) que el servidor ya no manda: contrato y realidad decian cosas distintas, y los
+    // clientes generados a partir de el llevaban ese modelo fantasma dentro.
+    //
+    // Declarando `PagedModel` las dos cosas coinciden y no dependen de que nadie recuerde la anotacion.
     @GetMapping("/paginated")
     @Parameters({
             @Parameter(name = "page", description = "Numero de pagina (empezando en 0)", in = ParameterIn.QUERY,
@@ -145,11 +151,11 @@ public class ExampleController {
             @Parameter(name = "sort", description = "Orden: campo,direccion. Puede repetirse", in = ParameterIn.QUERY,
                     schema = @Schema(type = "string", defaultValue = "id,asc"))
     })
-    public ResponseEntity<Page<MyTableResponse>> listPaginated(
+    public ResponseEntity<PagedModel<MyTableResponse>> listPaginated(
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC)
             @Parameter(hidden = true) Pageable pageable
     ) {
-        return ResponseEntity.ok(exampleService.findAllPaginated(pageable));
+        return ResponseEntity.ok(new PagedModel<>(exampleService.findAllPaginated(pageable)));
     }
 
 }

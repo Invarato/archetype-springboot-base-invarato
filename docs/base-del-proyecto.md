@@ -367,6 +367,15 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   cuando lo que falta es un `@Import`.
 - **G33 · Dos claves iguales en el mismo documento YAML.** `yq` lo tolera (gana la ultima), pero Spring
   lo rechaza con «while constructing a mapping», que no menciona cual es la clave duplicada.
+- **G34 · `@EnableSpringDataWebSupport(VIA_DTO)` arregla el JSON, pero NO el contrato.** La anotacion
+  cambia lo que se serializa; springdoc, en cambio, documenta el **tipo declarado** en la firma del
+  metodo. Devolviendo `Page<T>` con la anotacion puesta, el servidor manda `{content, page}` mientras el
+  contrato sigue describiendo los 11 campos internos de `Page` — y los clientes generados a partir de el
+  arrastran modelos (`PageableObject`, `SortObject`) de una respuesta que ya nadie envia. Contrato y
+  realidad divergen **sin que falle nada**. La unica forma de que coincidan es declarar
+  `PagedModel<T>` como tipo de retorno; la anotacion se queda como red de seguridad para el proximo
+  `Page` que alguien devuelva sin pensarlo. Aviso general: en un proyecto *code-first*, lo que se
+  publica sale de la **firma**, no del comportamiento.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
