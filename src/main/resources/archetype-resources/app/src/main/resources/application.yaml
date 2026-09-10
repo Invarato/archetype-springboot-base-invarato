@@ -29,10 +29,32 @@ spring:
       # migraciones seria decorativa. Ademas este validate ES el detector de deriva: si anades un campo a
       # una entidad y olvidas la migracion, la aplicacion NO ARRANCA. Ver docs/migraciones.md.
       ddl-auto: validate
-    show-sql: true
+
+    # ⚠️ Spring lo deja en `true` por defecto y AVISA en cada arranque pidiendo que lo configures
+    # explicitamente. Aqui va a false, y no es una preferencia:
+    #
+    # Con open-in-view la sesion de JPA sigue abierta mientras se serializa la respuesta, asi que una
+    # relacion perezosa se carga sola, tarde y fuera de la transaccion. El efecto util es que «nunca
+    # falla»; el efecto real es que las consultas N+1 se vuelven INVISIBLES — ocurren al serializar,
+    # lejos del repositorio, y no aparecen en ningun sitio salvo en la latencia.
+    #
+    # Aqui ademas sobra: los servicios devuelven DTOs y son transaccionales, asi que todo lo que hay que
+    # cargar se carga dentro de la transaccion. Si algun dia salta LazyInitializationException, el fallo
+    # NO es este ajuste: es que algo se dejo una entidad a medio cargar para usarla despues.
+    open-in-view: false
+
     properties:
       hibernate:
-        format_sql: true
+        # Antidoto generico contra el N+1: al resolver relaciones perezosas, Hibernate las agrupa en una
+        # sola consulta con IN (...) en vez de una por fila.
+        #
+        # Medido en este mismo proyecto, cargando 5 registros y tocando su relacion:
+        #   sin esto → 6 consultas (1 + una por fila).  con esto → 2.
+        #
+        # No sustituye a un JOIN FETCH o un @EntityGraph cuando sabes que vas a necesitar la relacion,
+        # pero convierte el caso accidental —el que nadie ve venir— en algo con coste acotado.
+        # Lo vigila NPlusUnoIT.
+        default_batch_fetch_size: 50
 
   flyway:
     enabled: true
@@ -138,6 +160,26 @@ logging:
     ${groupId}: #[[${LOG_LEVEL_APP:DEBUG}]]#
     org.hibernate.SQL: #[[${LOG_LEVEL_SQL:INFO}]]#
 
+  # Ajustes del JSON estructurado. Solo se aplican donde logback usa el encoder estructurado, o sea
+  # fuera de local/dev/test: en dev el log sigue siendo texto con colores.
+  structured:
+    ecs:
+      service:
+        # El nombre sale de spring.application.name si no se dice otra cosa. El entorno hay que darlo:
+        # es lo que permite separar en el recolector los logs de staging de los de produccion.
+        environment: ${spring.profiles.active}
+    json:
+      # Trazas de excepcion: acortadas y con la CAUSA RAIZ PRIMERO.
+      #
+      # No es cosmetico. Una excepcion envuelta cuatro veces empieza por el envoltorio mas externo, que
+      # nunca dice nada, y esconde al final la linea que importa — justo donde los recolectores truncan
+      # por longitud. Con `root: first` lo primero que se lee es lo que fallo de verdad.
+      stacktrace:
+        root: first
+        max-length: 2048
+        max-throwable-depth: 30
+        include-common-frames: false
+
 # === DOCUMENTACION DE LA API ===
 # APAGADA por defecto y encendida solo en dev (ver el documento del perfil, mas abajo). En produccion
 # regalaria el mapa completo de la API sin que nadie lo pida; el contrato ya viaja en el modulo contract.
@@ -193,6 +235,18 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+  # El SQL a la vista, SOLO en dev. Estuvo activado para todos los perfiles, produccion incluida, y sale
+  # caro por partida doble: cada sentencia se formatea y se escribe (con trafico real es muchisimo log
+  # por peticion), y ademas `format_sql` la parte en varias lineas, lo que rompe el log estructurado —
+  # una entrada JSON por linea deja de ser una entrada por evento.
+  #
+  # Para ver el SQL de produccion estan las trazas, que ademas dicen cuanto tardo cada consulta.
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
 # El colector de trazas que levanta el compose. Con esto, `make run` ya exporta y las trazas se ven en
 # http://localhost:16686 sin configurar nada mas.

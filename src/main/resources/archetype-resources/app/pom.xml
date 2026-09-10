@@ -49,15 +49,10 @@
             <scope>runtime</scope>
         </dependency>
         <!--
-          Logs en JSON (ver logback-spring.xml). En Kubernetes los logs van a stdout y alguien los
-          recoge y los parsea; en texto plano se pierden los campos y no se puede filtrar por nada.
-          En local se sigue viendo texto con colores, que es lo legible para una persona.
+          Los logs en JSON NO llevan dependencia: el logging estructurado viene en Spring Boot desde la
+          3.4 (ver logback-spring.xml y logging.structured en application.yaml). Antes habia aqui un
+          net.logstash.logback:logstash-logback-encoder, que ya no hace falta.
         -->
-        <dependency>
-            <groupId>net.logstash.logback</groupId>
-            <artifactId>logstash-logback-encoder</artifactId>
-            <version>${logstash-logback-encoder.version}</version>
-        </dependency>
         <!--   Observabilidad   -->
 
         <!--  DB  -->
@@ -152,11 +147,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.redis</groupId>
-            <artifactId>testcontainers-redis</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

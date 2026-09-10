@@ -317,6 +317,50 @@ nace igualmente protegido, con el token en la metadata de la llamada.
 **Qué reabriría esto:** que una integración concreta se repita en la mayoría de proyectos generados. Si
 está en todos, deja de ser opcional y entra — con su test.
 
+### D13 · Logging estructurado nativo, sin dependencia externa (2026-09-10)
+
+El JSON de los logs lo hacía `net.logstash.logback:logstash-logback-encoder`, con 30 líneas de XML y una
+versión que había que revisar a mano porque el BOM no la gestiona.
+
+Desde Spring Boot 3.4 el logging estructurado viene de serie, y desde la 3.5 cubre lo único que faltaba
+para poder cambiar: el recorte de trazas con la causa raíz primero
+(`logging.structured.json.stacktrace.root: first`). Se comprobó arrancando la aplicación con el perfil
+`prod` y provocando un fallo real: la traza empieza por `ConnectException` —la causa de verdad— y luego
+lista los envoltorios, con el recorte a 2048 caracteres exacto.
+
+Se gana además `service.version` en cada línea, que el encoder anterior no ponía.
+
+**Por qué se cambió y no «porque es más nuevo»:** una dependencia menos de las pocas cuya versión no
+gobierna el BOM, y 30 líneas de XML que pasan a ser configuración por entorno. Si el formato nativo se
+quedara corto para algún recolector, el encoder externo sigue siendo una opción legítima.
+
+---
+
+## Auditoría contra prácticas obsoletas (2026-09-10)
+
+Revisión punto por punto contra una lista pública de patrones de Spring Boot ya desaconsejados. Se hizo
+**buscando en el código**, no de memoria; tres de los resultados eran falsos positivos que solo aparecían
+en comentarios que explican por qué NO se usa eso.
+
+| Práctica desaconsejada | Estado |
+|---|---|
+| Inyección por campo con `@Autowired` | ✅ No se usa; además **ArchUnit la prohíbe** en el build |
+| `@Value` para configuración grande | ✅ `@ConfigurationProperties` + `@ConfigurationPropertiesScan` |
+| `@Transactional` mal usado | ✅ `readOnly` en las lecturas, límites en la capa de servicio |
+| `System.out.println` | ✅ Ninguno; SLF4J parametrizado |
+| `WebSecurityConfigurerAdapter`, `antMatchers` | ✅ Un `SecurityFilterChain`, `requestMatchers` |
+| `RestTemplate` | ✅ `RestClient` (el cliente generado ya lo usaba) |
+| `WebMvcConfigurerAdapter`, `@EnableWebMvc` de más | ✅ Ninguno |
+| `javax.*` | ✅ Todo `jakarta.*` |
+| JUnit 4 (`@RunWith`) | ✅ JUnit 5 |
+| `spring.factories` | ✅ No hay starter propio todavía ([D4](#d4--el-parent-pom-publicado-va-en-una-segunda-fase-2026-09-09)) |
+| Errores como mapas sueltos | ✅ `ProblemDetail`, y con **RFC 9457**, que sustituye a la 7807 |
+| Hilos virtuales | ✅ `spring.threads.virtual.enabled: true` |
+| **N+1 de JPA** | ❌ **Nada.** Corregido: ver G42 |
+| **`open-in-view`** | ❌ **Sin configurar**, y Spring avisaba en cada arranque. Corregido: ver G40 |
+
+Los dos huecos eran el mismo problema por dos sitios, y salió un tercero de propina (G41).
+
 ---
 
 ## Tropiezos ya pagados
@@ -440,6 +484,21 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   Comprobar el comportamiento —pedir el registro borrado da 404— es mas estable **y demuestra mas**: si
   la entrada siguiera cacheada, `findById` la devolveria en vez de lanzar, asi que esa asercion cubre a
   la otra. Regla: afirmar por la superficie publica, no por las tripas.
+- **G40 · `open-in-view` estaba sin configurar, y Spring lo avisaba en CADA arranque.** El aviso
+  («spring.jpa.open-in-view is enabled by default...») aparecia tres veces en el log del gate y llevaba
+  ahi desde el principio: un log que nadie lee es un log que no existe. Lo grave no es el aviso sino lo
+  que tapa: con OSIV la sesion de JPA sigue abierta al serializar la respuesta, asi que las relaciones
+  perezosas se cargan solas, tarde y fuera de la transaccion — y **las consultas N+1 se vuelven
+  invisibles**, porque ocurren lejos del repositorio y no fallan. Ahora va a `false`.
+- **G41 · `show-sql: true` estaba activo en TODOS los perfiles, produccion incluida.** Vivia en el primer
+  documento del yaml, no en el de `dev`. Con trafico real son miles de sentencias formateadas y escritas
+  por minuto; y como `format_sql` las parte en varias lineas, ademas **rompe el log estructurado**: una
+  entrada JSON por linea deja de ser una entrada por evento. Movido a `dev`.
+- **G42 · El N+1, medido en vez de supuesto.** Cargando 5 registros y tocando su relacion: **1 consulta
+  para la lista y 5 mas** para las relaciones. Con `hibernate.default_batch_fetch_size: 50` pasa a **2 en
+  total**. Lo vigila `NPlusUnoIT`, que no comprueba el resultado sino **cuantas sentencias** se
+  ejecutaron — la unica forma de que un N+1 se ponga rojo, porque nunca falla: solo va lento, y con pocos
+  datos ni eso.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el

@@ -41,29 +41,21 @@
     <!-- ── Resto de entornos: JSON de una linea ───────────────────────────────────────────── -->
     <springProfile name="!default &amp; !local &amp; !dev &amp; !test &amp; !ddl-dump">
         <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <includeContext>false</includeContext>
-                <!-- Campos fijos para poder filtrar por servicio y entorno en el recolector. -->
-                <customFields>{"service":"${appName}","environment":"${activeProfile}"}</customFields>
-                <!-- El MDC entero, que es donde viajan traceId/spanId y lo que anadas tu. -->
-                <provider class="net.logstash.logback.composite.loggingevent.MdcJsonProvider"/>
-                <fieldNames>
-                    <timestamp>timestamp</timestamp>
-                    <version>[ignore]</version>
-                    <levelValue>[ignore]</levelValue>
-                </fieldNames>
-                <!--
-                  Trazas de excepcion acortadas y con la CAUSA RAIZ PRIMERO. Sin esto, una excepcion
-                  envuelta cuatro veces llena la pantalla de marco y esconde justo la linea que importa
-                  — y ademas hay recolectores que truncan por longitud y se comen el final.
-                -->
-                <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
-                    <maxDepthPerThrowable>30</maxDepthPerThrowable>
-                    <maxLength>2048</maxLength>
-                    <shortenedClassNameLength>20</shortenedClassNameLength>
-                    <rootCauseFirst>true</rootCauseFirst>
-                    <exclude>sun\.reflect\..*\.invoke.*</exclude>
-                </throwableConverter>
+            <!--
+              Encoder DE SPRING BOOT, no de una biblioteca externa. Aqui habia un LogstashEncoder de
+              net.logstash.logback: funcionaba bien, pero era una dependencia mas —y de las pocas cuya
+              version habia que fijar a mano, porque el BOM no la gestiona—.
+
+              Desde Spring Boot 3.4 el logging estructurado viene de serie, y desde la 3.5 cubre tambien
+              lo unico que faltaba: el recorte de trazas con la causa raiz primero. Todo lo que hacia el
+              encoder externo se hace ahora con propiedades en application.yaml, que ademas se pueden
+              cambiar por entorno sin tocar este XML.
+
+              `ecs` = Elastic Common Schema, nombres de campo estandar (`@timestamp`, `log.level`,
+              `service.name`...). Tambien valen `logstash` y `gelf`.
+            -->
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>ecs</format>
             </encoder>
         </appender>
         <root level="INFO">
