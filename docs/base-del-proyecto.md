@@ -302,10 +302,17 @@ los casos futuros sin volver a discutirlos, y decidió estos:
 |---|---|---|
 | **WebFlux** | **Fuera** | Cero usos. Además, mezclar `starter-webflux` con `starter-web` en una app de servlets es fuente de comportamientos raros. Para llamar a otros servicios, `RestClient` ya viene en `starter-web`. |
 | **Redis / caché** | **Se hace real** | Se pagaba el 100% del coste (dependencia, contenedor, configuración, compose) por el 0% del valor. Ahora hay `@Cacheable`/`@CacheEvict` de ejemplo y un `CacheIT` que prueba que guarda **y** que invalida. |
-| **Kafka, WebSocket, gRPC** | **Recetas en `docs/`, no código** | No son «una dependencia más»: cambian la forma de la aplicación. Kafka mete un broker en la puerta; gRPC, un segundo puerto y una cadena de protos; WebSocket rompe las dos historias sobre las que está construido esto (stateless y contrato OpenAPI). Un arquetipo con las tres dentro deja de ser una base y pasa a ser una demo. |
+| **Kafka, WebSocket, gRPC** | **[Recetas](recetas/readme.md), no código** | No son «una dependencia más»: cambian la forma de la aplicación. Kafka mete un broker en la puerta; gRPC, un segundo puerto y una cadena de protos; WebSocket rompe las dos historias sobre las que está construido esto (stateless y contrato OpenAPI). Un arquetipo con las tres dentro deja de ser una base y pasa a ser una demo. |
 
 **Varios arquetipos, no.** Multiplicaría por N el mantenimiento de la puerta, que es la parte cara y la
 que da el valor.
+
+**Las recetas no son un folleto.** Están en [docs/recetas/](recetas/readme.md), y cada una **se aplicó a
+un proyecto generado antes de escribirla**: los pasos son los que funcionaron, los tropiezos son los que
+aparecieron al hacerlo y las cifras están medidas. De ahí salieron tres hallazgos que no se veían desde
+fuera: los listeners de Kafka metían 14 errores de conexión en tests que no lo usan; el handshake de
+WebSocket da 401 porque **es una petición HTTP** y pasa por la cadena de seguridad; y el servicio gRPC
+nace igualmente protegido, con el token en la metadata de la llamada.
 
 **Qué reabriría esto:** que una integración concreta se repita en la mayoría de proyectos generados. Si
 está en todos, deja de ser opcional y entra — con su test.

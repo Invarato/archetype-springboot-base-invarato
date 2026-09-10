@@ -78,6 +78,20 @@ Los datos de prueba no van por Flyway.
 - Integración (`*IT.java`) con **Testcontainers**: levantan su propio Postgres efímero, distinto del de
   desarrollo, para no ensuciar la base con la que estás trabajando.
 
+#[[##]]# Añadir lo que no viene de serie
+
+Este proyecto trae lo que necesita casi cualquier microservicio: API REST con su contrato y sus clientes
+generados, base de datos con migraciones, caché, seguridad, trazas y despliegue. **Kafka, WebSocket y
+gRPC no vienen dentro a propósito** — cambian la forma de la aplicación y saldría caro que los cargaran
+todos los proyectos para que los aprovechen unos pocos.
+
+Para cada uno hay una receta ya probada sobre un proyecto como este, con sus pasos, su test y los
+tropiezos que aparecieron al montarla:
+
+- [Kafka](https://github.com/Invarato/archetype-springboot-base-invarato/blob/main/docs/recetas/kafka.md)
+- [WebSocket](https://github.com/Invarato/archetype-springboot-base-invarato/blob/main/docs/recetas/websocket.md)
+- [gRPC](https://github.com/Invarato/archetype-springboot-base-invarato/blob/main/docs/recetas/grpc.md)
+
 #[[##]]# Licencia
 
 Define la que quieras en el POM.

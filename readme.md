@@ -103,6 +103,9 @@ el BOM de Spring Boot y el build puede romperse sin que nadie toque el repo.
   cada decisión. Además de los tropiezos ya pagados, para no repetirlos.
 - **[docs/flujo-de-trabajo.md](docs/flujo-de-trabajo.md)** — el gate y qué caza cada comprobación.
 - **[docs/migraciones.md](docs/migraciones.md)** — cómo nace y evoluciona el esquema.
+- **[docs/recetas/](docs/recetas/readme.md)** — cómo añadir lo que no viene de serie
+  ([Kafka](docs/recetas/kafka.md), [WebSocket](docs/recetas/websocket.md),
+  [gRPC](docs/recetas/grpc.md)). Cada una se aplicó a un proyecto generado antes de escribirla.
 
 El proyecto generado trae su propio `readme.md` y su `make help`.
 
