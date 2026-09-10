@@ -239,6 +239,49 @@ inspeccion. Es lo que destapo G29.
 **Que la reabriria.** Necesitar iterar contra un cluster a diario: ahi skaffold, Tilt o DevSpace vuelven a
 tener sentido.
 
+### D11 · Cobertura, javadoc como contrato, y la API contra su propio contrato (2026-09-10)
+
+**JaCoCo, sin umbral que rompa el build.** La cobertura sirve para **ver qué no está probado**, no como
+nota que aprobar. Un mínimo puesto a ojo se cumple escribiendo tests que ejecutan código sin comprobar
+nada: el número sube, la confianza no, y encima estorba. Si algún día se pone umbral, que salga de la
+cobertura real medida, no de un número redondo.
+
+**El javadoc pasa a ser la documentación de la API** (`therapi-runtime-javadoc`). Mantener una
+documentación ya cuesta; mantener dos que dicen lo mismo es como se desincronizan.
+
+⚠️ **Y tiene una consecuencia que hay que entender antes de escribir una línea:** al activarlo, **el
+javadoc deja de ser interno**. El de una clase acaba siendo la descripción del tag en el contrato; el de
+un método, la de su operación; el de un componente de un record, la de esa propiedad. Se comprobó en
+carne propia: la primera generación publicó en el contrato un aviso interno que decía «⚠️ de aquí solo
+salen DTOs… ArchitectureTest lo vigila», visible para todos los consumidores de la API.
+
+**La regla que queda:** *javadoc = lo que un consumidor necesita saber. Comentarios `//` = lo que
+necesita saber quien mantiene el código.* Verificado de extremo a extremo: un javadoc acaba en el
+contrato, en el cliente Java, en el cliente Python y en su documentación markdown. Una fuente, cuatro
+destinos.
+
+**Schemathesis contrasta la API con su contrato.** Genera casos de prueba **desde el esquema** —tipos,
+formatos, límites, enums— y comprueba propiedades que deben cumplirse siempre: que no haya 500, que la
+respuesta case con lo documentado, que la API no viole su propio contrato. Aporta lo que los tests no
+pueden: los tests prueban los casos que se nos ocurrieron; esto explora los que **no**.
+
+⚠️ **Complementa, no sustituye.** Demuestra que la API no se rompe ni miente; **no** que la lógica de
+negocio sea correcta. Para eso siguen estando los tests de siempre.
+
+**Y va en CI, no solo en un `make`.** Un gate que hay que acordarse de lanzar no es un gate — la misma
+lección que ya nos costó con `make verify`. Corre en su **propio job**, para que un fallo diga «la API ya
+no cumple lo que promete» en vez de perderse entre los tests normales. Con cadencia de dos niveles: pocos
+ejemplos en cada push para no alargar los PR, búsqueda profunda en la ejecución semanal.
+
+⚠️ Detalle que lo haría inútil si se pasa por alto: la API exige autenticación, así que hay que pasarle un
+token. Sin él, Schemathesis solo recibiría 401 en todo y **pasaría en verde sin haber probado nada**.
+
+**El proyecto generado ya nace con CI.** Era un hueco de fondo que este trabajo destapó: el arquetipo
+tenía CI para sí mismo y generaba proyectos sin ninguna.
+
+**Qué la reabriría.** Que el fuzzing dé demasiados falsos positivos y se acabe desactivando: ahí lo
+correcto sería acotar `--checks`, no convivir con él en rojo.
+
 ## Tropiezos ya pagados
 
 Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.**
@@ -411,6 +454,10 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
       (509 líneas documentando targets que ya no existían).
 - [x] **Decidir sobre `k8s/` y skaffold.** ✅ 2026-09-09 (D10): fuera skaffold, y el despliegue pasa a un
       chart de Helm con values por entorno. Verificado con `helm lint` y `helm template` de verdad.
+- [ ] **Tracing distribuido de verdad** (micrometer-tracing + exportador OTLP). Hoy hay **correlación**
+      —`traceId`/`spanId` en el log y en la cabecera `X-Trace-Id`— pero no **exportación** a un colector.
+      La diferencia: hoy sigues una petición dentro de un servicio, no entre servicios. Falta decidir a
+      dónde se exportan, y eso es infraestructura concreta.
 - [ ] **Autoconfiguración para el cliente Java.** Hoy `client-java` es código generado en crudo: quien lo
       use tiene que instanciar el `ApiClient`, ponerle la URL base y cablear el token a mano, en cada
       proyecto consumidor. Con un `@AutoConfiguration` + `@ConfigurationProperties` dentro del módulo,

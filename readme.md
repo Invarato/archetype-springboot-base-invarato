@@ -1,4 +1,8 @@
-# Maven Archetype: Spring Boot Base (Invarato)
+| **Testcontainers** | Los tests de integración levantan su propio Postgres, aparte del de desarrollo. |
+| **La API contra su contrato** | Schemathesis genera casos desde el esquema y comprueba que la API no devuelve 500 ni responde algo que no case con lo documentado. Encuentra lo que no se te ocurrió probar. |
+| **Documentación sin duplicar** | El **javadoc** es la documentación de la API: acaba en el contrato y, desde ahí, en los clientes generados y en su documentación. Una sola fuente. |
+| **Cobertura** | JaCoCo, sin umbral que rompa el build: sirve para ver qué falta por probar, no como nota que aprobar. |
+| **CI incluida** | El proyecto generado nace con su workflow: tests, cobertura y contraste de la API en un job aparte. |# Maven Archetype: Spring Boot Base (Invarato)
 
 [![verify](https://github.com/Invarato/archetype-springboot-base-invarato/actions/workflows/verify.yml/badge.svg)](https://github.com/Invarato/archetype-springboot-base-invarato/actions/workflows/verify.yml)
 [![Maven Central](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fjarroba%2Farchetype-springboot-base-invarato%2Fmaven-metadata.xml&style=flat-square&label=Maven%20Central)](https://central.sonatype.com/artifact/com.jarroba/archetype-springboot-base-invarato)

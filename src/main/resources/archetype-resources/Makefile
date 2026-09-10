@@ -1,5 +1,5 @@
 .PHONY: help clean build test run run-dev run-prod stop docker-up docker-down docker-restart \
-        db-baseline db-info token openapi package install \
+        db-baseline db-info token openapi api-fuzz coverage package install \
         deps-tree deps-updates verify fmt check docker-build docker-run logs actuator-health
 
 # Colors for output
@@ -56,6 +56,10 @@ help:
 	@echo ""
 	@echo "$(YELLOW)📄 Contrato:$(NC)"
 	@echo "  make openapi          Regenera el contrato OpenAPI desde el codigo"
+	@echo "  make api-fuzz         Prueba la API real CONTRA su contrato (Schemathesis)"
+	@echo ""
+	@echo "$(YELLOW)🔍 Calidad:$(NC)"
+	@echo "  make coverage         Informe de cobertura (JaCoCo)"
 	@echo ""
 	@echo "$(YELLOW)📦 Dependencies Commands:$(NC)"
 	@echo "  make deps-tree        Show dependency tree"
@@ -305,3 +309,36 @@ openapi:
 	$(MVN) -pl app -am verify -Dopenapi.update=true
 	@echo "$(GREEN)✓ contract/src/main/resources/openapi/openapi.json actualizado$(NC)"
 	@echo "$(YELLOW)→ Revisa el diff y commitealo junto al cambio de codigo.$(NC)"
+
+# ============================================
+# Contraste de la API con su contrato
+# ============================================
+# Schemathesis lee el openapi.json y GENERA casos de prueba a partir del esquema: tipos, formatos,
+# limites, campos obligatorios, enums. Despues comprueba propiedades que deben cumplirse siempre —que no
+# haya 500, que la respuesta case con lo documentado, que la API no viole su propio contrato.
+#
+# Por que aporta algo que los tests no dan: nuestros tests comprueban los casos que se nos ocurrieron.
+# Esto explora los que NO se nos ocurrieron, y son justo los que llegan a produccion.
+#
+# ⚠️ Complementa, no sustituye. Prueba que la API no se rompe ni miente; NO prueba que la logica de
+# negocio sea correcta. Para eso estan los tests de siempre.
+#
+# Se lanza contra la API ARRANCADA (make run en otra terminal). En CI corre solo, en su propio job.
+api-fuzz:
+	@echo "$(GREEN)🎲 Contrastando la API con su contrato...$(NC)"
+	@curl -fsS http://localhost:8080/actuator/health >/dev/null 2>&1 \
+		|| { echo "$(RED)✗ La API no responde en el 8080. Arrancala antes: make run$(NC)"; exit 1; }
+	@# La API exige autenticacion, asi que hay que darle un token: sin el, Schemathesis solo recibiria
+	@# 401 en todo y no ejercitaria nada — pasaria en verde sin haber probado la API.
+	@tok=$$($(MAKE) --no-print-directory token | head -1); \
+	docker run --rm --network=host schemathesis/schemathesis:stable run \
+		http://localhost:8080/v3/api-docs \
+		--header "Authorization: Bearer $$tok" \
+		--checks all \
+		--max-examples 50
+	@echo "$(GREEN)✓ La API concuerda con su contrato$(NC)"
+
+coverage:
+	@echo "$(GREEN)📊 Generando informe de cobertura...$(NC)"
+	$(MVN) verify
+	@echo "$(GREEN)✓ app/target/site/jacoco/index.html$(NC)"

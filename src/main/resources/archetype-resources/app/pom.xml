@@ -163,6 +163,21 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc-openapi.version}</version>
         </dependency>
+        <!--
+          Documentacion de la API desde el JAVADOC, en vez de repetirla en anotaciones @Operation.
+
+          Mantener una documentacion ya cuesta; mantener DOS que dicen lo mismo es como se desincronizan.
+          Con esto, el javadoc de un metodo pasa a ser la descripcion de la operacion en el contrato, y el
+          de un campo la de su propiedad. Una sola fuente.
+
+          ⚠️ Solo cubre DESCRIPCIONES. Para summary, ejemplos, codigos de respuesta o esquemas
+          polimorficos siguen haciendo falta las anotaciones de Swagger.
+        -->
+        <dependency>
+            <groupId>com.github.therapi</groupId>
+            <artifactId>therapi-runtime-javadoc</artifactId>
+            <version>${therapi.version}</version>
+        </dependency>
         <!--    Documentation    -->
 
         <!--    Web    -->
@@ -290,6 +305,18 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok-mapstruct-binding</artifactId>
                             <version>${lombok-mapstruct-binding.version}</version>
+                        </path>
+                        <!--
+                          Embebe el javadoc en el bytecode para que springdoc pueda leerlo en tiempo de
+                          ejecucion. Es lo que permite documentar la API con javadoc en vez de repetirlo
+                          en anotaciones.
+                          ⚠️ Tiene que estar en TODOS los modulos cuyas clases quieras documentar. Si un
+                          DTO vive en otro modulo sin este procesador, sus campos salen sin descripcion.
+                        -->
+                        <path>
+                            <groupId>com.github.therapi</groupId>
+                            <artifactId>therapi-runtime-javadoc-scribe</artifactId>
+                            <version>${therapi.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

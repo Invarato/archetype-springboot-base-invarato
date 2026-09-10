@@ -33,18 +33,23 @@
         "type" : "object"
       },
       "MyTableResponse" : {
+        "description" : "Datos de un registro.",
         "properties" : {
           "description" : {
+            "description" : "descripción libre",
             "type" : "string"
           },
           "myTableParentId" : {
+            "description" : "identificador del registro padre, si lo tiene",
             "format" : "int64",
             "type" : "integer"
           },
           "name" : {
+            "description" : "nombre",
             "type" : "string"
           },
           "surname" : {
+            "description" : "apellidos",
             "type" : "string"
           }
         },
@@ -123,8 +128,10 @@
         "type" : "object"
       },
       "SimpleApiResponse" : {
+        "description" : "Respuesta simple con un único mensaje.",
         "properties" : {
           "message" : {
+            "description" : "texto del mensaje",
             "type" : "string"
           }
         },
@@ -161,6 +168,7 @@
   "paths" : {
     "/api/v1/examples" : {
       "get" : {
+        "description" : "Lista todos los registros.",
         "operationId" : "listAllEjemplos",
         "responses" : {
           "200" : {
@@ -174,12 +182,14 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "los registros existentes; lista vacía si no hay ninguno"
           }
         },
+        "summary" : "Lista todos los registros.",
         "tags" : [ "example-controller" ]
       },
       "post" : {
+        "description" : "Crea un registro nuevo.\n\n <p>La respuesta incluye la cabecera <code>Location</code> con la URL del recurso creado.</p>",
         "operationId" : "createNew",
         "requestBody" : {
           "content" : {
@@ -189,6 +199,7 @@
               }
             }
           },
+          "description" : "datos del registro a crear",
           "required" : true
         },
         "responses" : {
@@ -201,14 +212,16 @@
                 }
               }
             },
-            "description" : "Created"
+            "description" : "el identificador asignado"
           }
         },
+        "summary" : "Crea un registro nuevo",
         "tags" : [ "example-controller" ]
       }
     },
     "/api/v1/examples/hello" : {
       "get" : {
+        "description" : "Devuelve un saludo en texto plano.",
         "operationId" : "sayHello",
         "responses" : {
           "200" : {
@@ -219,14 +232,16 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "el texto <code>Hello World</code>"
           }
         },
+        "summary" : "Devuelve un saludo en texto plano.",
         "tags" : [ "example-controller" ]
       }
     },
     "/api/v1/examples/helloDto" : {
       "get" : {
+        "description" : "Devuelve un saludo como objeto JSON.",
         "operationId" : "sayHelloDto",
         "responses" : {
           "200" : {
@@ -237,17 +252,19 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "un mensaje de saludo"
           }
         },
+        "summary" : "Devuelve un saludo como objeto JSON.",
         "tags" : [ "example-controller" ]
       }
     },
     "/api/v1/examples/paginated" : {
       "get" : {
+        "description" : "Lista los registros de forma paginada.\n\n <p>Admite ordenación por cualquier campo con <code>sort=campo,dirección</code>, y el parámetro puede\n repetirse para ordenar por varios criterios.</p>",
         "operationId" : "listPaginatedFromService",
         "parameters" : [ {
-          "description" : "Numero de pagina",
+          "description" : "Numero de pagina (empezando en 0)",
           "in" : "query",
           "name" : "page",
           "schema" : {
@@ -255,7 +272,7 @@
             "type" : "integer"
           }
         }, {
-          "description" : "Tamano de pagina",
+          "description" : "Numero de elementos por pagina",
           "in" : "query",
           "name" : "size",
           "schema" : {
@@ -263,7 +280,7 @@
             "type" : "integer"
           }
         }, {
-          "description" : "Orden (campo,direccion). Puede repetirse",
+          "description" : "Orden: campo,direccion. Puede repetirse",
           "in" : "query",
           "name" : "sort",
           "schema" : {
@@ -280,16 +297,19 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "una página de registros con sus metadatos de paginación"
           }
         },
+        "summary" : "Lista los registros de forma paginada",
         "tags" : [ "example-controller" ]
       }
     },
     "/api/v1/examples/{id}" : {
       "delete" : {
+        "description" : "Elimina un registro.",
         "operationId" : "delete",
         "parameters" : [ {
+          "description" : "identificador del registro a eliminar",
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -303,11 +323,14 @@
             "description" : "No Content"
           }
         },
+        "summary" : "Elimina un registro.",
         "tags" : [ "example-controller" ]
       },
       "get" : {
+        "description" : "Busca un registro por su identificador.",
         "operationId" : "getEjemplo",
         "parameters" : [ {
+          "description" : "identificador del registro",
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -325,14 +348,17 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "el registro encontrado"
           }
         },
+        "summary" : "Busca un registro por su identificador.",
         "tags" : [ "example-controller" ]
       },
       "put" : {
+        "description" : "Actualiza un registro existente.",
         "operationId" : "update",
         "parameters" : [ {
+          "description" : "identificador del registro a actualizar",
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -349,6 +375,7 @@
               }
             }
           },
+          "description" : "nuevos datos del registro",
           "required" : true
         },
         "responses" : {
@@ -356,6 +383,7 @@
             "description" : "No Content"
           }
         },
+        "summary" : "Actualiza un registro existente.",
         "tags" : [ "example-controller" ]
       }
     }
@@ -365,5 +393,9 @@
   } ],
   "servers" : [ {
     "url" : "/"
+  } ],
+  "tags" : [ {
+    "description" : "Operaciones de ejemplo.\n\n <p>Todas las rutas exigen un token válido en la cabecera <code>Authorization</code>, salvo las sondas de\n salud. Las respuestas de error siguen el formato <code>application/problem+json</code>.</p>",
+    "name" : "example-controller"
   } ]
 }

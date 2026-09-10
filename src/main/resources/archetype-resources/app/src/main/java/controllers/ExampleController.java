@@ -20,12 +20,22 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// ⚠️ NOTA INTERNA, y por eso va en un comentario `//` y no en javadoc:
+//
+// El javadoc de esta clase YA NO ES INTERNO. Con therapi activado, el javadoc de la clase acaba siendo
+// la descripcion del tag en el contrato OpenAPI, y el de cada metodo la descripcion de su operacion. O
+// sea: lo escriben los de dentro y lo leen los de FUERA, incluidos los clientes generados.
+//
+// La regla que se sigue aqui: javadoc = lo que un consumidor necesita saber. Comentarios `//` = lo que
+// necesita saber quien mantiene el codigo. Mezclarlos publica avisos internos en la API.
+//
+// Y lo de siempre: de aqui solo salen DTOs, nunca entidades. Lo vigila ArchitectureTest.
+
 /**
- * Ejemplo de controlador REST.
+ * Operaciones de ejemplo.
  *
- * <p>⚠️ Todo lo que sale de aqui son DTOs, nunca entidades. Lo que devuelva un controlador acaba en el
- * contrato OpenAPI y, desde ahi, en todos los clientes generados: publicar la entidad ata la API a la
- * forma de la tabla. {@code ArchitectureTest} lo vigila.</p>
+ * <p>Todas las rutas exigen un token válido en la cabecera {@code Authorization}, salvo las sondas de
+ * salud. Las respuestas de error siguen el formato {@code application/problem+json}.</p>
  */
 @RestController
 @RequestMapping("api/v1/examples")
@@ -34,11 +44,21 @@ public class ExampleController {
 
     private final ExampleService exampleService;
 
+    /**
+     * Devuelve un saludo en texto plano.
+     *
+     * @return el texto {@code Hello World}
+     */
     @GetMapping("/hello")
     public ResponseEntity<String> sayHello() {
         return ResponseEntity.ok("Hello World");
     }
 
+    /**
+     * Devuelve un saludo como objeto JSON.
+     *
+     * @return un mensaje de saludo
+     */
     @GetMapping("/helloDto")
     public ResponseEntity<SimpleApiResponse> sayHelloDto() {
         return ResponseEntity.ok(exampleService.getHelloDto());
@@ -46,30 +66,59 @@ public class ExampleController {
 
     // ── CRUD de ejemplo ──────────────────────────────────────────────────────────────────────
 
-    // La cabecera Location la pone ResourceResponseAdvice a partir de lo que se devuelve: el
-    // controlador no construye URLs. Basta con declarar el 201.
+    /**
+     * Crea un registro nuevo.
+     *
+     * <p>La respuesta incluye la cabecera {@code Location} con la URL del recurso creado.</p>
+     *
+     * @param request datos del registro a crear
+     * @return el identificador asignado
+     */
+    // La cabecera Location la pone ResourceResponseAdvice: el controlador no construye URLs.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Long createNew(@Valid @RequestBody MyTableRequest request) {
         return exampleService.saveSimple(request);
     }
 
+    /**
+     * Lista todos los registros.
+     *
+     * @return los registros existentes; lista vacía si no hay ninguno
+     */
     @GetMapping
     public ResponseEntity<List<MyTableResponse>> listAllEjemplos() {
         return ResponseEntity.ok(exampleService.getAllEjemplos());
     }
 
+    /**
+     * Busca un registro por su identificador.
+     *
+     * @param id identificador del registro
+     * @return el registro encontrado
+     */
     @GetMapping("/{id}")
     public ResponseEntity<MyTableResponse> getEjemplo(@PathVariable Long id) {
         return ResponseEntity.ok(exampleService.getEjemploById(id));
     }
 
+    /**
+     * Actualiza un registro existente.
+     *
+     * @param id      identificador del registro a actualizar
+     * @param request nuevos datos del registro
+     */
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void update(@PathVariable Long id, @Valid @RequestBody MyTableRequest request) {
         exampleService.updateEjemploById(id, request);
     }
 
+    /**
+     * Elimina un registro.
+     *
+     * @param id identificador del registro a eliminar
+     */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
@@ -77,23 +126,23 @@ public class ExampleController {
     }
 
     /**
-     * Ejemplo con paginacion.
+     * Lista los registros de forma paginada.
      *
-     * <p>Requiere anadir en MainApplication:
-     * {@code @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)},
-     * o el JSON de la pagina expondra la estructura interna de {@code Page} y cambiara con Spring.</p>
+     * <p>Admite ordenación por cualquier campo con {@code sort=campo,dirección}, y el parámetro puede
+     * repetirse para ordenar por varios criterios.</p>
      *
-     * <p>Ejemplos:
-     * {@code ?page=0&size=10} · {@code ?page=0&size=10&sort=id,asc} ·
-     * {@code ?page=1&size=20&sort=name,desc&sort=id,asc}</p>
+     * @return una página de registros con sus metadatos de paginación
      */
+    // NOTA INTERNA: si se devuelve `Page` en la respuesta, hace falta anadir en MainApplication
+    // @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO), o el JSON
+    // expondra la estructura interna de Page y cambiara al subir de version de Spring.
     @GetMapping("/paginated")
     @Parameters({
-            @Parameter(name = "page", description = "Numero de pagina", in = ParameterIn.QUERY,
+            @Parameter(name = "page", description = "Numero de pagina (empezando en 0)", in = ParameterIn.QUERY,
                     schema = @Schema(type = "integer", defaultValue = "0")),
-            @Parameter(name = "size", description = "Tamano de pagina", in = ParameterIn.QUERY,
+            @Parameter(name = "size", description = "Numero de elementos por pagina", in = ParameterIn.QUERY,
                     schema = @Schema(type = "integer", defaultValue = "10")),
-            @Parameter(name = "sort", description = "Orden (campo,direccion). Puede repetirse", in = ParameterIn.QUERY,
+            @Parameter(name = "sort", description = "Orden: campo,direccion. Puede repetirse", in = ParameterIn.QUERY,
                     schema = @Schema(type = "string", defaultValue = "id,asc"))
     })
     public ResponseEntity<Page<MyTableResponse>> listPaginatedFromService(

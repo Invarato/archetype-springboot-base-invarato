@@ -76,6 +76,8 @@
         <archunit.version>1.5.0</archunit.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
+        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <therapi.version>0.15.0</therapi.version>
         <openapi-generator.version>7.25.0</openapi-generator.version>
         <swagger-annotations.version>2.2.30</swagger-annotations.version>
         <rewrite-maven-plugin.version>6.46.1</rewrite-maven-plugin.version>
@@ -133,6 +135,35 @@
                         <goals>
                             <goal>clean</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              JaCoCo: cobertura de tests.
+              Informe en target/site/jacoco/index.html tras `mvn verify`.
+
+              ⚠️ SIN umbral que rompa el build, y es deliberado. Un minimo de cobertura puesto a ojo se
+              cumple escribiendo tests que ejecutan codigo sin comprobar nada: el numero sube, la
+              confianza no, y encima estorba. La cobertura sirve para VER que hay sin probar, no como
+              nota que aprobar. Si algun dia se pone un umbral, que salga de la cobertura real medida,
+              no de un numero redondo.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>preparar-agente</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <!-- El informe se genera en `verify`, para que incluya tambien los tests de
+                         integracion y no solo los unitarios. -->
+                    <execution>
+                        <id>informe</id>
+                        <phase>verify</phase>
+                        <goals><goal>report</goal></goals>
                     </execution>
                 </executions>
             </plugin>

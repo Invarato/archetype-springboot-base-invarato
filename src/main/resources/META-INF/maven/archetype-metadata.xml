@@ -129,7 +129,9 @@
                 <include>compose-app.yml</include>
                 <include>readme.md</include>
                 <include>Makefile</include>
-                <include>Dockerfile</include>                <include>MAKEFILE.md</include>            </includes>
+                <include>Dockerfile</include>
+                <include>MAKEFILE.md</include>
+            </includes>
         </fileSet>
 
         <!--
@@ -140,6 +142,17 @@
             <directory>.mvn</directory>
             <includes>
                 <include>**/*</include>
+            </includes>
+        </fileSet>
+
+        <!--
+          La CI del proyecto generado. Va FILTRADA porque lleva ${artifactId}, y declarada aqui porque
+          si no, no viaja (G6).
+        -->
+        <fileSet encoding="UTF-8" filtered="true">
+            <directory>.github</directory>
+            <includes>
+                <include>**/*.yml</include>
             </includes>
         </fileSet>
 
