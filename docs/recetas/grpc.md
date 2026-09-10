@@ -238,6 +238,27 @@ class GrpcIT {
 ./mvnw verify -Dit.test=GrpcIT
 ```
 
+## ¿Y RSocket?
+
+Spring lo empujó bastante en su momento, y sigue soportado: `spring-boot-starter-rsocket` está en el BOM
+(rsocket-java 1.1.5). Como protocolo no tiene nada de malo — de hecho hace algunas cosas mejor que gRPC,
+como tratar los cuatro modelos de interacción (incluido *fire-and-forget*) de forma uniforme.
+
+Lo que pasó es que la adopción se quedó, en la práctica, dentro del mundo Spring. Y eso se nota mirando
+qué gestiona hoy el propio BOM:
+
+| | Lo que trae |
+|---|---|
+| **gRPC** | Starters de servidor **y** cliente, dos módulos de soporte de test, y la cadena de build completa: `grpc-java`, `protobuf-java` y hasta el `protobuf-maven-plugin` |
+| **RSocket** | Starter y starter de test |
+
+Por eso esta receta no fija ni una versión a mano: hay alguien manteniendo esa coherencia por ti.
+
+**El criterio para elegir, aquí:** si el que está al otro lado es un servicio que no controlas, o está
+escrito en otro lenguaje, pesa más el tooling que el protocolo. Este proyecto ya genera clientes Java y
+Python de su contrato REST; gRPC tiene generadores en esos lenguajes y en casi cualquier otro. Un
+protocolo binario cuyas herramientas solo existen en tu propio ecosistema resuelve media papeleta.
+
 ## Tropiezos
 
 **El canal `"local"` necesita `@AutoConfigureTestGrpcTransport`.** El primer intento apuntaba a
