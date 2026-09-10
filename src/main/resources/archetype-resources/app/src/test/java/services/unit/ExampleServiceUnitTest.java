@@ -39,7 +39,7 @@ class ExampleServiceUnitTest extends BaseServiceUnitTest {
     private MyTableMapper myTableMapper;
 
     @Test
-    void testGetAllEjemplos() {
+    void devuelveTodos() {
         List<MyTable> entidades = List.of(new MyTable(), new MyTable());
         List<MyTableResponse> esperadas = List.of(
                 new MyTableResponse("Name", "Surname", "Description", null),
@@ -48,7 +48,7 @@ class ExampleServiceUnitTest extends BaseServiceUnitTest {
         when(myTableRepository.findAll()).thenReturn(entidades);
         when(myTableMapper.toResponses(entidades)).thenReturn(esperadas);
 
-        List<MyTableResponse> ejemplos = exampleService.getAllEjemplos();
+        List<MyTableResponse> ejemplos = exampleService.findAll();
 
         assertEquals(2, ejemplos.size());
         assertEquals("Name", ejemplos.getFirst().name());
@@ -56,7 +56,7 @@ class ExampleServiceUnitTest extends BaseServiceUnitTest {
     }
 
     @Test
-    void testSaveSimple() {
+    void creaYGuarda() {
         MyTableRequest peticion = new MyTableRequest("New Example", "Surname", "Description", null);
 
         MyTable entidad = new MyTable();
@@ -70,7 +70,7 @@ class ExampleServiceUnitTest extends BaseServiceUnitTest {
         when(myTableMapper.toEntity(peticion)).thenReturn(entidad);
         when(myTableRepository.save(any(MyTable.class))).thenReturn(guardada);
 
-        Long nuevoId = exampleService.saveSimple(peticion);
+        Long nuevoId = exampleService.create(peticion);
         assertEquals(1L, nuevoId);
 
         // Se comprueba QUE se guarda, no solo que se devolvio un id.
@@ -82,41 +82,41 @@ class ExampleServiceUnitTest extends BaseServiceUnitTest {
     }
 
     @Test
-    void testGetEjemploById_Encontrado() {
+    void buscaPorId() {
         MyTable entidad = new MyTable();
         MyTableResponse esperada = new MyTableResponse("Name", "Surname", "Description", null);
 
         when(myTableRepository.findById(1L)).thenReturn(Optional.of(entidad));
         when(myTableMapper.toResponse(entidad)).thenReturn(esperada);
 
-        assertEquals("Name", exampleService.getEjemploById(1L).name());
+        assertEquals("Name", exampleService.findById(1L).name());
         verify(myTableRepository).findById(1L);
     }
 
     @Test
-    void testGetEjemploById_NoEncontrado() {
+    void buscarInexistenteFalla() {
         when(myTableRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> exampleService.getEjemploById(1L));
+        assertThrows(ResourceNotFoundException.class, () -> exampleService.findById(1L));
         verify(myTableRepository).findById(1L);
     }
 
     @Test
-    void testDeleteEjemploById() {
+    void borra() {
         MyTable entidad = new MyTable();
         when(myTableRepository.findById(1L)).thenReturn(Optional.of(entidad));
 
-        exampleService.deleteEjemploById(1L);
+        exampleService.delete(1L);
 
         verify(myTableRepository).findById(1L);
         verify(myTableRepository).delete(entidad);
     }
 
     @Test
-    void testDeleteEjemploById_NoEncontrado() {
+    void borrarInexistenteFalla() {
         when(myTableRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> exampleService.deleteEjemploById(1L));
+        assertThrows(ResourceNotFoundException.class, () -> exampleService.delete(1L));
         // Y sobre todo: no se borra nada si no existia.
         verify(myTableRepository, never()).delete(any());
     }

@@ -247,6 +247,51 @@ checksum existe justamente para impedirlo.
 Los **datos de prueba no van por Flyway** (acabarían aplicándose en producción): van por un runner del
 perfil `dev`. Flyway es para estructura.
 
+#[[##]]# Seguridad
+
+#[[###]]# `make token`
+
+Acuña un JWT de desarrollo, firmado con el secreto local del perfil `dev`.
+
+```shell
+curl -H "Authorization: Bearer $(make token | head -1)" http://localhost:8080/api/v1/examples
+```
+
+La seguridad está **siempre activa**, también en local: lo que cambia entre entornos no son las reglas,
+es de dónde salen los tokens. Así no hay fallos de autorización que aparezcan por primera vez al
+desplegar.
+
+#[[##]]# Contrato de la API
+
+#[[###]]# `make openapi`
+
+Regenera `contract/src/main/resources/openapi/openapi.json` desde el código y acepta el cambio.
+
+Un test compara el contrato generado con el versionado en cada build: si la API cambia sin actualizar el
+fichero, el build se pone rojo. No es para impedir cambiar la API, es para que **ningún cambio de
+contrato pase inadvertido** — renombrar un campo de un DTO rompe a todos los clientes.
+
+#[[###]]# `make api-fuzz`
+
+Contrasta la API **arrancada** con su propio contrato usando Schemathesis: genera casos desde el esquema
+y comprueba que no hay 500 y que las respuestas casan con lo documentado.
+
+```shell
+make run        # en otra terminal
+make api-fuzz
+```
+
+Encuentra lo que no se te ocurrió probar. No sustituye a los tests: no dice nada de la lógica de negocio.
+
+#[[##]]# Calidad
+
+#[[###]]# `make coverage`
+
+Informe de cobertura en `app/target/site/jacoco/index.html`.
+
+No hay umbral que rompa el build a propósito: la cobertura sirve para **ver qué no está probado**, no como
+nota que aprobar.
+
 #[[##]]# Comandos de Dependencias
 
 #[[###]]# `make deps-tree`

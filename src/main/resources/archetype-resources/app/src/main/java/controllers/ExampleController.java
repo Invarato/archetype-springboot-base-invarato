@@ -77,8 +77,8 @@ public class ExampleController {
     // La cabecera Location la pone ResourceResponseAdvice: el controlador no construye URLs.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Long createNew(@Valid @RequestBody MyTableRequest request) {
-        return exampleService.saveSimple(request);
+    public Long create(@Valid @RequestBody MyTableRequest request) {
+        return exampleService.create(request);
     }
 
     /**
@@ -87,8 +87,8 @@ public class ExampleController {
      * @return los registros existentes; lista vacía si no hay ninguno
      */
     @GetMapping
-    public ResponseEntity<List<MyTableResponse>> listAllEjemplos() {
-        return ResponseEntity.ok(exampleService.getAllEjemplos());
+    public ResponseEntity<List<MyTableResponse>> listAll() {
+        return ResponseEntity.ok(exampleService.findAll());
     }
 
     /**
@@ -98,8 +98,8 @@ public class ExampleController {
      * @return el registro encontrado
      */
     @GetMapping("/{id}")
-    public ResponseEntity<MyTableResponse> getEjemplo(@PathVariable Long id) {
-        return ResponseEntity.ok(exampleService.getEjemploById(id));
+    public ResponseEntity<MyTableResponse> getOne(@PathVariable Long id) {
+        return ResponseEntity.ok(exampleService.findById(id));
     }
 
     /**
@@ -111,7 +111,7 @@ public class ExampleController {
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void update(@PathVariable Long id, @Valid @RequestBody MyTableRequest request) {
-        exampleService.updateEjemploById(id, request);
+        exampleService.update(id, request);
     }
 
     /**
@@ -122,7 +122,7 @@ public class ExampleController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        exampleService.deleteEjemploById(id);
+        exampleService.delete(id);
     }
 
     /**
@@ -145,11 +145,11 @@ public class ExampleController {
             @Parameter(name = "sort", description = "Orden: campo,direccion. Puede repetirse", in = ParameterIn.QUERY,
                     schema = @Schema(type = "string", defaultValue = "id,asc"))
     })
-    public ResponseEntity<Page<MyTableResponse>> listPaginatedFromService(
+    public ResponseEntity<Page<MyTableResponse>> listPaginated(
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC)
             @Parameter(hidden = true) Pageable pageable
     ) {
-        return ResponseEntity.ok(exampleService.getAllExamplesPaginated(pageable));
+        return ResponseEntity.ok(exampleService.findAllPaginated(pageable));
     }
 
 }

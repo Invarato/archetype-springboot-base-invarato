@@ -8,8 +8,10 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 // Registra los @ConfigurationProperties (por ejemplo configs.CorsProperties) sin tener que enumerarlos
 // uno a uno en un @EnableConfigurationProperties que siempre se acaba olvidando actualizar.
 @ConfigurationPropertiesScan
-// TODO solo si usas Pageable/Page en las respuestas:
-// TODO @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
+// Si devuelves `Page` en alguna respuesta, anade tambien:
+//   @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
+// Sin eso, el JSON de la pagina expone la estructura interna de Page, que cambia entre versiones de
+// Spring y romperia a los clientes sin previo aviso.
 public class MainApplication {
 
     public static void main(String[] args) {

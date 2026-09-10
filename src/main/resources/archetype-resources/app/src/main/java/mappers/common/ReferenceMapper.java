@@ -1,50 +1,52 @@
 package ${groupId}.mappers.common;
 
 import ${groupId}.entities.common.BaseEntity;
+import ${groupId}.exceptions.ResourceNotFoundException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.mapstruct.Mapper;
 import org.mapstruct.TargetType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import java.util.Optional;
 
 /**
- * Generic Mapper that converts an ID to its entity and vice versa.
+ * Convierte un identificador en su entidad y viceversa, para los mapeos de relaciones.
+ *
+ * <p>Es lo que permite que un DTO lleve {@code myTableParentId} y la entidad tenga
+ * {@code myTableParent}: MapStruct usa este mapper —declarado en {@code BaseMapperConfig}— para hacer
+ * la traducción en los dos sentidos sin que haya que escribirla en cada mapper.</p>
  */
 @Mapper(componentModel = "spring")
 public abstract class ReferenceMapper {
-    private static final Logger log = LoggerFactory.getLogger(ReferenceMapper.class);
 
+    // @PersistenceContext y no inyeccion por constructor: el EntityManager NO es un bean normal, es un
+    // proxy ligado a la transaccion en curso, y esta anotacion es la forma estandar de obtenerlo.
+    // (Por eso ArchitectureTest prohibe @Autowired en campos y no esta: son cosas distintas.)
     @PersistenceContext
     private EntityManager entityManager;
 
     public <T extends BaseEntity> T fromId(Long id, @TargetType Class<T> entityClass) {
+        // Un id nulo significa «sin relacion», no un error: es lo que llega cuando el DTO no trae padre.
         return Optional.ofNullable(id)
-                .map(validId -> findEntityById(validId, entityClass))
+                .map(idValido -> buscarOFallar(idValido, entityClass))
                 .orElse(null);
-    }
-
-    private <T extends BaseEntity> T findEntityById(Long id, Class<T> entityClass) {
-        T entity = entityManager.find(entityClass, id);
-        return Optional.ofNullable(entity)
-                .orElseThrow(() -> {
-                    log.error("Entity not found: {} with ID {}", entityClass.getSimpleName(), id);
-                    return new EntityNotFoundException(String.format(
-                            "Entity not found: %s with ID %s",
-                            entityClass.getSimpleName(), id
-                    ));
-                });
     }
 
     public <T extends BaseEntity> Long toId(T entity) {
         return entity != null ? entity.getId() : null;
     }
 
-    // Custom exception for more specific error handling
-    public static class EntityNotFoundException extends RuntimeException {
-        public EntityNotFoundException(String message) {
-            super(message);
+    private <T extends BaseEntity> T buscarOFallar(Long id, Class<T> entityClass) {
+        // `find` y no `getReference`: se quiere saber AHORA si el id existe. Con una referencia
+        // perezosa, un id inexistente no falla aqui — falla mucho despues, al tocar el objeto, con una
+        // excepcion que ya no dice quien lo pidio.
+        T entidad = entityManager.find(entityClass, id);
+        if (entidad == null) {
+            // La excepcion del proyecto, que el manejador global traduce a un 404. Antes habia aqui una
+            // clase anidada propia llamada EntityNotFoundException, que ademas sombreaba a la de JPA:
+            // dos tipos con el mismo nombre y significados distintos en el mismo codigo.
+            throw ResourceNotFoundException.of(entityClass.getSimpleName(), id);
         }
+        return entidad;
     }
 }

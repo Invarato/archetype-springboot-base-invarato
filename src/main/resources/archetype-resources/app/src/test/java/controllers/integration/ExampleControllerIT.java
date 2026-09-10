@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ExampleControllerIT extends BaseControllerIT {
 
     @Test
-    void testSayHello() throws Exception {
+    void saluda() throws Exception {
         mockMvc.perform(get("/api/v1/examples/hello").with(jwt()))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -33,23 +33,23 @@ class ExampleControllerIT extends BaseControllerIT {
     }
 
     @Test
-    void testSayHelloDto() throws Exception {
+    void saludaConDto() throws Exception {
         mockMvc.perform(get("/api/v1/examples/helloDto").with(jwt()))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Hello World DTO"));
     }
 
-    private Long createNewExample(String name, String surname, String description) throws Exception {
+    private Long crearEjemplo(String name, String surname, String description) throws Exception {
         MyTableRequest mockDto = new MyTableRequest(name, surname, description, null);
         String location = this.postCreate("/api/v1/examples", mockDto);
         return this.getIdFromLocationHeader(location);
     }
 
     @Test
-    void testCreateNewAndGetExample() throws Exception {
+    void creaYRecupera() throws Exception {
         // Arrange: se inserta un ejemplo
-        Long generatedId = createNewExample("Name", "Surname", "Description");
+        Long generatedId = crearEjemplo("Name", "Surname", "Description");
 
         // Act & Assert: se pide y se comprueba la respuesta
         mockMvc.perform(get("/api/v1/examples/{id}", generatedId).with(jwt()))
@@ -61,9 +61,9 @@ class ExampleControllerIT extends BaseControllerIT {
     }
 
     @Test
-    void testListAllExamples() throws Exception {
-        createNewExample("Name", "Surname", "Description");
-        createNewExample("Name2", "Surname2", "Description2");
+    void listaTodos() throws Exception {
+        crearEjemplo("Name", "Surname", "Description");
+        crearEjemplo("Name2", "Surname2", "Description2");
 
         mockMvc.perform(get("/api/v1/examples").with(jwt()))
                 .andDo(print())
@@ -74,8 +74,8 @@ class ExampleControllerIT extends BaseControllerIT {
     }
 
     @Test
-    void testUpdateExample() throws Exception {
-        Long generatedId = createNewExample("Name", "Surname", "Description");
+    void actualiza() throws Exception {
+        Long generatedId = crearEjemplo("Name", "Surname", "Description");
 
         MyTableRequest updatedDto = new MyTableRequest("NewName", "NewSurname", "NewDescription", null);
 
@@ -96,8 +96,8 @@ class ExampleControllerIT extends BaseControllerIT {
     }
 
     @Test
-    void testDeleteExample() throws Exception {
-        Long generatedId = createNewExample("Name", "Surname", "Description");
+    void borra() throws Exception {
+        Long generatedId = crearEjemplo("Name", "Surname", "Description");
 
         mockMvc.perform(delete("/api/v1/examples/" + generatedId).with(jwt()))
                 .andDo(print())

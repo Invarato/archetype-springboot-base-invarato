@@ -22,7 +22,7 @@ class ExampleRepositoryIT extends BaseRepositoryIT {
 
 
     @Test
-    void testFindByName() {
+    void buscaPorNombre() {
         MyTable mockEntity = new MyTable();
         mockEntity.setName("Name");
         mockEntity.setSurname("Surname");
@@ -38,7 +38,7 @@ class ExampleRepositoryIT extends BaseRepositoryIT {
     }
 
     @Test
-    void testFindAll() {
+    void devuelveTodos() {
         MyTable mockEntity = new MyTable();
         mockEntity.setName("Name");
         mockEntity.setSurname("Surname");

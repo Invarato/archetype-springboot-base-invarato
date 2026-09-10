@@ -169,7 +169,7 @@
     "/api/v1/examples" : {
       "get" : {
         "description" : "Lista todos los registros.",
-        "operationId" : "listAllEjemplos",
+        "operationId" : "listAll",
         "responses" : {
           "200" : {
             "content" : {
@@ -190,7 +190,7 @@
       },
       "post" : {
         "description" : "Crea un registro nuevo.\n\n <p>La respuesta incluye la cabecera <code>Location</code> con la URL del recurso creado.</p>",
-        "operationId" : "createNew",
+        "operationId" : "create",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -262,7 +262,7 @@
     "/api/v1/examples/paginated" : {
       "get" : {
         "description" : "Lista los registros de forma paginada.\n\n <p>Admite ordenación por cualquier campo con <code>sort=campo,dirección</code>, y el parámetro puede\n repetirse para ordenar por varios criterios.</p>",
-        "operationId" : "listPaginatedFromService",
+        "operationId" : "listPaginated",
         "parameters" : [ {
           "description" : "Numero de pagina (empezando en 0)",
           "in" : "query",
@@ -328,7 +328,7 @@
       },
       "get" : {
         "description" : "Busca un registro por su identificador.",
-        "operationId" : "getEjemplo",
+        "operationId" : "getOne",
         "parameters" : [ {
           "description" : "identificador del registro",
           "in" : "path",

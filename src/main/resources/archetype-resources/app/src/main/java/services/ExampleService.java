@@ -44,23 +44,23 @@ public class ExampleService {
     }
 
     @Transactional
-    public Long saveSimple(MyTableRequest request) {
+    public Long create(MyTableRequest request) {
         MyTable nueva = myTableMapper.toEntity(request);
         return myTableRepository.save(nueva).getId();
     }
 
     @Transactional(readOnly = true)
-    public List<MyTableResponse> getAllEjemplos() {
+    public List<MyTableResponse> findAll() {
         return myTableMapper.toResponses(myTableRepository.findAll());
     }
 
     @Transactional(readOnly = true)
-    public MyTableResponse getEjemploById(Long id) {
+    public MyTableResponse findById(Long id) {
         return myTableMapper.toResponse(buscarOFallar(id, "No se puede encontrar el registro con id: "));
     }
 
     @Transactional
-    public void updateEjemploById(Long id, MyTableRequest request) {
+    public void update(Long id, MyTableRequest request) {
         MyTable existente = buscarOFallar(id, "No se puede actualizar el registro con id: ");
         // El mapper aplica los cambios sobre la entidad ya cargada, en vez de construir una nueva: asi
         // no se pierden los campos que el request no trae (id, version, auditoria...).
@@ -69,14 +69,14 @@ public class ExampleService {
     }
 
     @Transactional
-    public void deleteEjemploById(Long id) {
+    public void delete(Long id) {
         myTableRepository.delete(buscarOFallar(id, "No se puede eliminar el registro con id: "));
     }
 
     // ======= Paginacion =======
 
     @Transactional(readOnly = true)
-    public Page<MyTableResponse> getAllExamplesPaginated(Pageable pageable) {
+    public Page<MyTableResponse> findAllPaginated(Pageable pageable) {
         // `map` sobre el Page conserva los metadatos de paginacion (total, pagina, tamaño) y convierte
         // solo el contenido.
         return myTableRepository.findAll(pageable).map(myTableMapper::toResponse);

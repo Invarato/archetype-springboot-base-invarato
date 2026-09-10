@@ -28,7 +28,7 @@ import java.time.Instant;
 // Es quien rellena las cuatro columnas de auditoria al persistir y al actualizar. Sin este listener las
 // anotaciones @CreatedDate y compania no hacen nada: no fallan, simplemente dejan los campos a null.
 @EntityListeners(AuditingEntityListener.class)
-public abstract class BaseEntity implements IdLongBaseEntity {
+public abstract class BaseEntity {
 
     @Id
     @Column(name = "id", unique = true, nullable = false)

@@ -30,10 +30,10 @@ class ExampleServiceIT extends BaseServiceIT {
     private MyTableRepository myTableRepository;
 
     @Test
-    void testGetAllEjemplos() {
-        exampleService.saveSimple(new MyTableRequest("New Example", "Surname", "Description", null));
+    void devuelveTodos() {
+        exampleService.create(new MyTableRequest("New Example", "Surname", "Description", null));
 
-        List<MyTableResponse> ejemplos = exampleService.getAllEjemplos();
+        List<MyTableResponse> ejemplos = exampleService.findAll();
 
         assertNotNull(ejemplos);
         assertEquals(1, ejemplos.size());
@@ -41,8 +41,8 @@ class ExampleServiceIT extends BaseServiceIT {
     }
 
     @Test
-    void testSaveSimple() {
-        Long nuevoId = exampleService.saveSimple(
+    void creaYGuarda() {
+        Long nuevoId = exampleService.create(
                 new MyTableRequest("Saved Example", "Surname", "Description", null));
 
         // Se comprueba contra la base de datos, no contra lo que devolvio el servicio.
@@ -52,10 +52,10 @@ class ExampleServiceIT extends BaseServiceIT {
     }
 
     @Test
-    void testGetEjemploById() {
-        Long id = exampleService.saveSimple(new MyTableRequest("Uno", "Dos", "Tres", null));
+    void buscaPorId() {
+        Long id = exampleService.create(new MyTableRequest("Uno", "Dos", "Tres", null));
 
-        MyTableResponse encontrado = exampleService.getEjemploById(id);
+        MyTableResponse encontrado = exampleService.findById(id);
 
         assertEquals("Uno", encontrado.name());
         assertEquals("Dos", encontrado.surname());
@@ -63,19 +63,19 @@ class ExampleServiceIT extends BaseServiceIT {
     }
 
     @Test
-    void testUpdateEjemploById() {
-        Long id = exampleService.saveSimple(new MyTableRequest("Antes", "A", "D", null));
+    void actualiza() {
+        Long id = exampleService.create(new MyTableRequest("Antes", "A", "D", null));
 
-        exampleService.updateEjemploById(id, new MyTableRequest("Despues", "B", "E", null));
+        exampleService.update(id, new MyTableRequest("Despues", "B", "E", null));
 
-        assertEquals("Despues", exampleService.getEjemploById(id).name());
+        assertEquals("Despues", exampleService.findById(id).name());
     }
 
     @Test
-    void testDeleteEjemploById() {
-        Long id = exampleService.saveSimple(new MyTableRequest("Para borrar", null, null, null));
+    void borra() {
+        Long id = exampleService.create(new MyTableRequest("Para borrar", null, null, null));
 
-        exampleService.deleteEjemploById(id);
+        exampleService.delete(id);
 
         Optional<MyTable> borrada = myTableRepository.findById(id);
         assertTrue(borrada.isEmpty());

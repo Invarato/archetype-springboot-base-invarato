@@ -44,14 +44,14 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
     }
 
     @Test
-    void testSayHello() throws Exception {
+    void saluda() throws Exception {
         mockMvc.perform(get("/api/v1/examples/hello"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Hello World"));
     }
 
     @Test
-    void testSayHelloDto() throws Exception {
+    void saludaConDto() throws Exception {
         when(exampleService.getHelloDto()).thenReturn(new SimpleApiResponse("Hello World DTO"));
 
         mockMvc.perform(get("/api/v1/examples/helloDto"))
@@ -61,11 +61,11 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
     }
 
     @Test
-    void testCreateNew() throws Exception {
+    void crea() throws Exception {
         MyTableRequest peticion = new MyTableRequest("Name", "Surname", "Description", null);
         long idGenerado = 1L;
 
-        when(exampleService.saveSimple(Mockito.any(MyTableRequest.class))).thenReturn(idGenerado);
+        when(exampleService.create(Mockito.any(MyTableRequest.class))).thenReturn(idGenerado);
 
         mockMvc.perform(post("/api/v1/examples")
                         .header("Host", "localhost")
@@ -79,8 +79,8 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
     }
 
     @Test
-    void testListAllEjemplos() throws Exception {
-        when(exampleService.getAllEjemplos()).thenReturn(List.of(
+    void listaTodos() throws Exception {
+        when(exampleService.findAll()).thenReturn(List.of(
                 respuesta("Name", "Surname", "Description"),
                 respuesta("Name2", "Surname2", "Description2")));
 
@@ -92,8 +92,8 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
     }
 
     @Test
-    void testGetEjemplo() throws Exception {
-        when(exampleService.getEjemploById(1L)).thenReturn(respuesta("Name", "Surname", "Description"));
+    void recuperaUno() throws Exception {
+        when(exampleService.findById(1L)).thenReturn(respuesta("Name", "Surname", "Description"));
 
         mockMvc.perform(get("/api/v1/examples/1"))
                 .andDo(print())
@@ -104,10 +104,10 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
     }
 
     @Test
-    void testUpdateEjemplo() throws Exception {
+    void actualiza() throws Exception {
         MyTableRequest peticion = new MyTableRequest("Name", "Surname", "Description", null);
 
-        Mockito.doNothing().when(exampleService).updateEjemploById(1L, peticion);
+        Mockito.doNothing().when(exampleService).update(1L, peticion);
 
         mockMvc.perform(put("/api/v1/examples/1")
                         .with(SecurityMockMvcRequestPostProcessors.csrf())
@@ -118,8 +118,8 @@ class ExampleControllerUnitTest extends BaseControllerUnitTest {
     }
 
     @Test
-    void testDeleteEjemplo() throws Exception {
-        Mockito.doNothing().when(exampleService).deleteEjemploById(1L);
+    void borra() throws Exception {
+        Mockito.doNothing().when(exampleService).delete(1L);
 
         mockMvc.perform(delete("/api/v1/examples/1")
                         .with(SecurityMockMvcRequestPostProcessors.csrf()))

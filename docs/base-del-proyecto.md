@@ -353,6 +353,20 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   *sobre* el arquetipo; el de `archetype-resources/.devcontainer/` es la plantilla que se copia a los
   proyectos generados. Tocar uno no cambia el otro. (Es el mismo tipo de despiste que G14, pero con los
   devcontainers.)
+- **G31 · Renombrar un metodo de un controlador ES UN CAMBIO DE CONTRATO.** El nombre del metodo se
+  convierte en el `operationId` del OpenAPI, y de ahi salen los nombres de los metodos en los clientes
+  generados. Una limpieza de nombres que parece interna rompe a todos los consumidores. Lo caza el test
+  de contrato, que para eso esta.
+- **G30 · Tracing: dos trampas silenciosas.** (1) Spring Boot 4 movio la propiedad —era
+  `management.otlp.tracing.endpoint`, ahora `management.opentelemetry.tracing.export.otlp.endpoint`— y
+  con el nombre viejo **no falla nada**: arranca, el traceId sigue en logs y cabecera, y simplemente NO
+  SE EXPORTA. (2) Una cadena **vacia no significa desactivado**: el exportador la valida y tumba el
+  arranque con «Invalid endpoint». Lo que se apaga es `management.tracing.export.enabled`.
+- **G32 · `@DataJpaTest` no carga las `@Configuration` del proyecto.** La auditoria de JPA no se aplicaba
+  y los tests fallaban con «null value in column created_at» — un error que apunta a la base de datos
+  cuando lo que falta es un `@Import`.
+- **G33 · Dos claves iguales en el mismo documento YAML.** `yq` lo tolera (gana la ultima), pero Spring
+  lo rechaza con «while constructing a mapping», que no menciona cual es la clave duplicada.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
