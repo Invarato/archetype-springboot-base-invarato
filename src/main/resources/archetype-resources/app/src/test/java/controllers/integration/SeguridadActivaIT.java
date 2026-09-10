@@ -1,6 +1,6 @@
 package ${groupId}.controllers.integration;
 
-import ${groupId}.common.ConfigTestContainersTest;
+import ${groupId}.common.BaseIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("La seguridad esta activa y no se puede apagar sin que salte")
-class SeguridadActivaIT extends ConfigTestContainersTest {
+class SeguridadActivaIT extends BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

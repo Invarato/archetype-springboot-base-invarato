@@ -114,6 +114,20 @@ if [ -d "$GEN/client-java/target/generated-sources" ]; then
                  || fail "C8 el cliente Java no ha generado ninguna clase"
 fi
 
+# ── C9 · Los tests corren la MISMA version de Redis que el compose ──────────────────────────
+# Estuvieron descuadradas (tests con redis:7-alpine, compose con redis:8.x). Es el peor descuadre
+# posible: la suite da verde sobre un motor distinto del que se despliega, asi que un cambio de
+# comportamiento entre versiones mayores no lo ve nadie hasta produccion.
+REDIS_TEST=$(grep -rhoE 'redis:[0-9]+(\.[0-9]+)*(-[a-z]+)?' "$GEN/app/src/test/java" 2>/dev/null | sort -u)
+REDIS_COMPOSE=$(grep -hoE 'redis:[0-9]+(\.[0-9]+)*(-[a-z]+)?' "$GEN/compose-app.yml" 2>/dev/null | sort -u)
+if [ -z "$REDIS_TEST" ] || [ -z "$REDIS_COMPOSE" ]; then
+  ok "C9 sin Redis que contrastar"
+elif [ "$REDIS_TEST" = "$REDIS_COMPOSE" ]; then
+  ok "C9 los tests y el compose usan $REDIS_COMPOSE"
+else
+  fail "C9 version de Redis descuadrada: tests '$REDIS_TEST' vs compose '$REDIS_COMPOSE'"
+fi
+
 # ── C6 · Ficheros que no deberian viajar ────────────────────────────────────────────────────
 for basura in __gitignore old__Dockerfile; do
   [ -e "$GEN/$basura" ] && fail "C6 '$basura' no deberia generarse" || true
@@ -122,7 +136,7 @@ ok "C6 sin ficheros muertos conocidos"
 
 echo
 if [ "$fallos" -eq 0 ]; then
-  printf '\033[0;32m✓ %s comprobaciones estructurales OK\033[0m\n' "8"
+  printf '\033[0;32m✓ %s comprobaciones estructurales OK\033[0m\n' "9"
   exit 0
 fi
 printf '\033[0;31m✗ %s comprobacion(es) fallidas\033[0m\n' "$fallos"

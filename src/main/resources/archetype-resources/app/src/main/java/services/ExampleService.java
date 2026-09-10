@@ -8,6 +8,8 @@ import ${groupId}.exceptions.ResourceNotFoundException;
 import ${groupId}.mappers.MyTableMapper;
 import ${groupId}.repositories.MyTableRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ExampleService {
 
+    /**
+     * Nombre de la región de caché. Es una constante y no un literal suelto porque el nombre tiene que
+     * coincidir <b>exactamente</b> entre el {@code @Cacheable} y sus {@code @CacheEvict}: una errata deja
+     * la entrada sin invalidar y el fallo no aparece hasta que alguien lee un dato viejo.
+     */
+    public static final String CACHE_EJEMPLOS = "examples";
+
     private final MyTableRepository myTableRepository;
     private final MyTableMapper myTableMapper;
 
@@ -54,11 +63,23 @@ public class ExampleService {
         return myTableMapper.toResponses(myTableRepository.findAll());
     }
 
+    /**
+     * Busca un registro por su identificador.
+     *
+     * @param id identificador del registro
+     * @return el registro encontrado
+     */
+    // La lectura por id es el caso tipico de cache: se pide muchas veces y cambia poco. Lo unico que
+    // hay que tener presente es que quien cachea contrae una deuda — TODA escritura sobre este id
+    // tiene que invalidar la entrada, o la aplicacion servira datos viejos indefinidamente. De ahi los
+    // @CacheEvict de update() y delete(): no son opcionales, son la otra mitad de esta anotacion.
+    @Cacheable(cacheNames = CACHE_EJEMPLOS, key = "#id")
     @Transactional(readOnly = true)
     public MyTableResponse findById(Long id) {
         return myTableMapper.toResponse(buscarOFallar(id, "No se puede encontrar el registro con id: "));
     }
 
+    @CacheEvict(cacheNames = CACHE_EJEMPLOS, key = "#id")
     @Transactional
     public void update(Long id, MyTableRequest request) {
         MyTable existente = buscarOFallar(id, "No se puede actualizar el registro con id: ");
@@ -68,6 +89,7 @@ public class ExampleService {
         myTableRepository.save(existente);
     }
 
+    @CacheEvict(cacheNames = CACHE_EJEMPLOS, key = "#id")
     @Transactional
     public void delete(Long id) {
         myTableRepository.delete(buscarOFallar(id, "No se puede eliminar el registro con id: "));

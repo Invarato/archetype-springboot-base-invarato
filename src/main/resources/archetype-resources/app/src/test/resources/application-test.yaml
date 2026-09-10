@@ -25,6 +25,9 @@ spring:
     hibernate:
       ddl-auto: validate
 
+  # La cache va APAGADA en los tests a proposito: si no, una prueba podria leer el valor que dejo
+  # cacheado otra y el resultado dependeria del orden de ejecucion. Quien quiera probar la cache la
+  # enciende para si mismo y se levanta su Redis — ver services/integration/CacheIT.
   cache:
     type: none
 
@@ -35,6 +38,15 @@ spring:
 management:
   tracing:
     export:
+      enabled: false
+  # Sin Redis levantado, su comprobacion de salud deja /actuator/health en DOWN y respondiendo 503, y
+  # con el se cae el test que verifica que las sondas son publicas — por un motivo que no tiene nada
+  # que ver con lo que ese test comprueba.
+  #
+  # ⚠️ Esto solo se apaga en el perfil `test`. En produccion la comprobacion sigue activa y ES la que
+  # se quiere: si la cache no responde, la aplicacion tiene un problema y debe decirlo.
+  health:
+    redis:
       enabled: false
 
 springdoc:

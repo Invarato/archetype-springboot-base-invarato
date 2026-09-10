@@ -75,9 +75,21 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <!--
-          Redis. Estaba `spring.cache.type=redis` en la configuracion pero la dependencia NO estaba en el
-          pom: configuracion apuntando a algo que no existe. Si configuras Redis, el starter va con ello.
+          Cache + Redis. Hacen falta LOS DOS, y es un error facil de cometer dos veces:
+
+            - spring-boot-starter-cache trae la ABSTRACCION (@Cacheable, @CacheEvict) y quien lee las
+              propiedades `spring.cache.*`.
+            - spring-boot-starter-data-redis trae la IMPLEMENTACION que las respalda.
+
+          Sin el de cache, el bloque `spring.cache.redis.*` del yaml no lo lee nadie y las anotaciones
+          no hacen nada; sin el de redis, `spring.cache.type=redis` no tiene con que funcionar. En los
+          dos casos la aplicacion ARRANCA TAN CONTENTA y simplemente no cachea, que es justo lo que
+          habia aqui: configuracion detallada apuntando a algo que no existia.
         -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -194,13 +206,6 @@
             <version>${therapi.version}</version>
         </dependency>
         <!--    Documentation    -->
-
-        <!--    Web    -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-        <!--    Web    -->
 
         <!-- MapStruct -->
         <dependency>

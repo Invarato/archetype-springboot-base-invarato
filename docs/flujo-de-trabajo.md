@@ -49,9 +49,12 @@ nos comimos**, no a una hipótesis; los códigos `G*` remiten a
 | **C4** | `mvnw` es ejecutable y tiene sus `.mvn/wrapper/*.properties` | G16 y G18: se copiaba el script sin su configuración, el `.gitignore` excluía `/.mvn/` entero, y los arquetipos no conservan el bit de ejecución. |
 | **C5** | El chart de Helm está completo y su directorio no conserva placeholders | G6, dos veces: primero un `skaffold.yaml` apuntando a un `k8s/` que no viajaba; después, los perfiles staging y prod de ese mismo skaffold apuntando a un chart de Helm que no existió nunca. |
 | **C6** | No viajan ficheros muertos conocidos | `__gitignore` y `old__Dockerfile` se generaban sin que nadie los usara. |
+| **C7** | El contrato viaja y **no publica entidades** | El cliente Java generado traía una clase `MyTable` con la forma de la tabla: un cambio en la base de datos se habría convertido en un cambio de la API, y de ahí a todos los consumidores. |
+| **C8** | Los clientes generan código de verdad | Un generador mal configurado no falla: no genera nada, el módulo compila vacío y quien consume se encuentra un jar sin clases. |
+| **C9** | Los tests usan la **misma versión de Redis** que el compose | Estuvieron descuadradas (tests con `redis:7-alpine`, entorno real con `redis:8`). Es el peor descuadre posible: la suite da verde sobre un motor distinto del que se despliega. |
 
 ⚠️ **Una comprobación que nunca falla no vale nada.** Si añades una, pruébala rompiendo el proyecto generado
-a propósito y comprobando que se pone roja. Las seis de arriba se verificaron así.
+a propósito y comprobando que se pone roja. Las nueve de arriba se verificaron así.
 
 ## Variables
 

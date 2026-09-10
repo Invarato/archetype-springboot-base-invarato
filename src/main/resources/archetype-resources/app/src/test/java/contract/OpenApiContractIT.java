@@ -1,6 +1,6 @@
 package ${groupId}.contract;
 
-import ${groupId}.common.ConfigTestContainersTest;
+import ${groupId}.common.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("El contrato OpenAPI esta al dia")
-class OpenApiContractIT extends ConfigTestContainersTest {
+class OpenApiContractIT extends BaseIntegrationTest {
 
     /** Relativa al modulo app, que es el directorio de trabajo de los tests. */
     private static final Path CONTRATO = Path.of("..", "contract", "src", "main", "resources", "openapi", "openapi.json");

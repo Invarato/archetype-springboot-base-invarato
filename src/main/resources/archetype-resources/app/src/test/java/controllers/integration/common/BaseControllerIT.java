@@ -2,7 +2,7 @@ package ${groupId}.controllers.integration.common;
 
 
 import lombok.extern.slf4j.Slf4j;
-import ${groupId}.common.ConfigTestContainersTest;
+import ${groupId}.common.BaseIntegrationTest;
 import ${groupId}.common.UtilsTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Slf4j
-public abstract class BaseControllerIT extends ConfigTestContainersTest {
+public abstract class BaseControllerIT extends BaseIntegrationTest {
 
     @Autowired
     protected MockMvc mockMvc;

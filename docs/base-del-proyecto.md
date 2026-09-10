@@ -282,6 +282,36 @@ tenía CI para sí mismo y generaba proyectos sin ninguna.
 **Qué la reabriría.** Que el fuzzing dé demasiados falsos positivos y se acabe desactivando: ahí lo
 correcto sería acotar `--checks`, no convivir con él en rojo.
 
+### D12 · Qué entra en el arquetipo: la regla del test (2026-09-10)
+
+La pregunta se planteó como «¿metemos Redis, Kafka, WebFlux, WebSocket, gRPC como ejemplos usables, o
+sobrecargamos?». La respuesta salió de mirar el propio repo, porque **el experimento ya estaba hecho**:
+`spring-boot-starter-webflux` y `spring-boot-starter-data-redis` llevaban tiempo en el pom con **cero
+usos** en el código. Nadie los había quitado. Y Redis no salía gratis: un contenedor arrancaba **cinco
+veces por suite** sin que ninguna prueba lo usara, y con una versión distinta (`redis:7`) de la que se
+despliega (`redis:8`).
+
+Ese es el argumento contra el «me lo descargo y quito lo que no use»: **una dependencia sin ejemplo es
+invisible**. No molesta, no falla, no se ve. Solo pesa, amplía la superficie de ataque y hay que
+actualizarla.
+
+**La regla:** *lo que entra en el arquetipo lo ejercita un test de la puerta.* Sin test, no entra. Decide
+los casos futuros sin volver a discutirlos, y decidió estos:
+
+| | Qué se hizo | Por qué |
+|---|---|---|
+| **WebFlux** | **Fuera** | Cero usos. Además, mezclar `starter-webflux` con `starter-web` en una app de servlets es fuente de comportamientos raros. Para llamar a otros servicios, `RestClient` ya viene en `starter-web`. |
+| **Redis / caché** | **Se hace real** | Se pagaba el 100% del coste (dependencia, contenedor, configuración, compose) por el 0% del valor. Ahora hay `@Cacheable`/`@CacheEvict` de ejemplo y un `CacheIT` que prueba que guarda **y** que invalida. |
+| **Kafka, WebSocket, gRPC** | **Recetas en `docs/`, no código** | No son «una dependencia más»: cambian la forma de la aplicación. Kafka mete un broker en la puerta; gRPC, un segundo puerto y una cadena de protos; WebSocket rompe las dos historias sobre las que está construido esto (stateless y contrato OpenAPI). Un arquetipo con las tres dentro deja de ser una base y pasa a ser una demo. |
+
+**Varios arquetipos, no.** Multiplicaría por N el mantenimiento de la puerta, que es la parte cara y la
+que da el valor.
+
+**Qué reabriría esto:** que una integración concreta se repita en la mayoría de proyectos generados. Si
+está en todos, deja de ser opcional y entra — con su test.
+
+---
+
 ## Tropiezos ya pagados
 
 Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.**
@@ -376,6 +406,33 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   `PagedModel<T>` como tipo de retorno; la anotacion se queda como red de seguridad para el proximo
   `Page` que alguien devuelva sin pensarlo. Aviso general: en un proyecto *code-first*, lo que se
   publica sale de la **firma**, no del comportamiento.
+- **G35 · La caché necesita DOS starters, y sin uno de ellos no cachea en silencio.**
+  `spring-boot-starter-cache` trae la abstraccion (`@Cacheable`, y quien lee `spring.cache.*`);
+  `spring-boot-starter-data-redis` trae la implementacion. Faltaba el primero, asi que habia un bloque
+  `spring.cache.redis.*` detallado —tiempo de vida, prefijo, estadisticas— **que no leia nadie**. La
+  aplicacion arranca igual y responde igual: lo unico que cambia es que no cachea. Corolario: un
+  `@Cacheable` sin `@EnableCaching` tampoco da error, tambien se queda en nada.
+- **G36 · Cachear valores en Redis: JSON con lista blanca, nunca «unsafe».** Con el serializador por
+  defecto (serializacion de Java) cachear un `record` falla porque no es `Serializable`. Al pasar a JSON
+  aparece el segundo golpe: sin informacion de tipo, lo que vuelve de Redis es un `LinkedHashMap` y el
+  cast revienta con «LinkedHashMap cannot be cast to ...». La solucion es `enableDefaultTyping(...)` con
+  un `PolymorphicTypeValidator` restringido a los paquetes propios. Existe `enableUnsafeDefaultTyping()`,
+  de una linea, y el nombre no es decorativo: aceptar cualquier tipo convierte a quien pueda escribir en
+  Redis en alguien que ejecuta codigo en el proceso.
+- **G37 · Un test que escribe sin transaccion contamina a los demas.** `CacheIT` no puede heredar del
+  base transaccional (necesita commits de verdad para distinguir «lo leyo de Redis» de «lo leyo de la
+  base»), y las filas que dejaba sobrevivian: los tests del controlador empezaron a ver tres registros
+  donde esperaban dos. Quien renuncia al rollback limpia el mismo, **antes y despues**.
+- **G38 · Cuidado con los tests que pasan por un efecto colateral de otro.** El contenedor de Redis que
+  arrancaba la clase base dejaba `/actuator/health` en UP «gratis». Al quitarlo —no lo usaba nadie— el
+  test de que las sondas son publicas empezo a dar 503: llevaba tiempo pasando por un motivo que no tenia
+  nada que ver con lo que comprobaba. En el perfil `test` se apaga `management.health.redis.enabled`; en
+  produccion sigue encendida, que ahi si se quiere.
+- **G39 · Afirmar sobre el estado interno en vez de sobre el comportamiento.** La primera version del
+  test de borrado miraba dentro de la cache (`cacheManager.getCache(...).get(id)`) y resulto fragil.
+  Comprobar el comportamiento —pedir el registro borrado da 404— es mas estable **y demuestra mas**: si
+  la entrada siguiera cacheada, `findById` la devolveria en vez de lanzar, asi que esa asercion cubre a
+  la otra. Regla: afirmar por la superficie publica, no por las tripas.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
