@@ -33,5 +33,19 @@ services:
     labels:
       org.springframework.boot.readiness-check.tcp.disable: true
 
+  # Colector de trazas para DESARROLLO. Jaeger en modo todo-en-uno: ingesta por OTLP y trae su propia
+  # interfaz, asi que con un solo contenedor puedes VER las trazas en http://localhost:16686
+  #
+  # ⚠️ Esto es solo para local. En un entorno real las trazas van al colector que tengas (Tempo, un
+  # OpenTelemetry Collector, o el servicio gestionado de tu nube), y la URL se pone en OTEL_ENDPOINT.
+  jaeger:
+    image: jaegertracing/jaeger:2.20.0
+    ports:
+      - "16686:16686"   # interfaz web
+      - "4318:4318"     # OTLP sobre HTTP, que es por donde exporta la aplicacion
+    labels:
+      org.springframework.boot.readiness-check.tcp.disable: true
+
 volumes:
   bd_data:
+

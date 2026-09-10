@@ -454,10 +454,6 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
       (509 líneas documentando targets que ya no existían).
 - [x] **Decidir sobre `k8s/` y skaffold.** ✅ 2026-09-09 (D10): fuera skaffold, y el despliegue pasa a un
       chart de Helm con values por entorno. Verificado con `helm lint` y `helm template` de verdad.
-- [ ] **Tracing distribuido de verdad** (micrometer-tracing + exportador OTLP). Hoy hay **correlación**
-      —`traceId`/`spanId` en el log y en la cabecera `X-Trace-Id`— pero no **exportación** a un colector.
-      La diferencia: hoy sigues una petición dentro de un servicio, no entre servicios. Falta decidir a
-      dónde se exportan, y eso es infraestructura concreta.
 - [ ] **Autoconfiguración para el cliente Java.** Hoy `client-java` es código generado en crudo: quien lo
       use tiene que instanciar el `ApiClient`, ponerle la URL base y cablear el token a mano, en cada
       proyecto consumidor. Con un `@AutoConfiguration` + `@ConfigurationProperties` dentro del módulo,

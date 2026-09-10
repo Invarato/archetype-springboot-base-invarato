@@ -8,7 +8,8 @@
 -- su checksum y Flyway aborta con "Migration checksum mismatch" alli donde ya estuviera aplicada. Los
 -- cambios de esquema van en V2__..., V3__..., escritos a mano.
 --
--- Las tablas `*_aud` y `revinfo` las exige Hibernate Envers, por el @Audited de la entidad.
+-- Las columnas de auditoria (created_at/by, updated_at/by) y `version` vienen de BaseEntity: las tiene
+-- toda entidad del proyecto. Las tablas `*_aud` y `revinfo` las exige Hibernate Envers, por el @Audited.
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 
 create sequence revinfo_seq start with 1 increment by 50;
@@ -25,13 +26,25 @@ create table my_table (
     name               varchar(200),
     surname            varchar(200),
     description        varchar(200),
+
+    -- Auditoria: quien y cuando. `timestamp with time zone` y no `timestamp` a secas: sin zona, el
+    -- mismo valor significa cosas distintas segun donde corra el servidor, y eso no se nota hasta que
+    -- hay dos regiones o cambia la hora.
+    created_at         timestamp(6) with time zone not null,
+    created_by         varchar(255),
+    updated_at         timestamp(6) with time zone not null,
+    updated_by         varchar(255),
+
+    -- Bloqueo optimista. Hibernate la incrementa sola en cada UPDATE.
+    version            bigint not null,
+
     primary key (id)
 );
 
 create table my_table_aud (
-    rev                integer not null,
+    rev                integer  not null,
     revtype            smallint,
-    id                 bigint  not null,
+    id                 bigint   not null,
     my_table_parent_id bigint,
     name               varchar(200),
     surname            varchar(200),

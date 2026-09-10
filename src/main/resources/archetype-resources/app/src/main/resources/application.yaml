@@ -98,6 +98,37 @@ management:
     git:
       mode: full
 
+  # === TRAZAS ===
+  # La exportacion va apagada por defecto: sin colector, exportar solo produce errores de conexion en el
+  # log cada pocos segundos. La correlacion (traceId en el log y en la cabecera X-Trace-Id) sigue
+  # funcionando igual, exporte o no.
+  #
+  # ⚠️ DOS trampas aqui, las dos silenciosas:
+  #
+  # 1) El NOMBRE de la propiedad cambio en Spring Boot 4.
+  #   Boot 3: management.otlp.tracing.endpoint
+  #   Boot 4: management.opentelemetry.tracing.export.otlp.endpoint   <- esta
+  #    Con el nombre viejo NO falla nada: la aplicacion arranca, el traceId sigue en los logs y en la
+  #    cabecera, y simplemente NO SE EXPORTA NADA. Se descubre mirando un colector vacio.
+  #
+  # 2) Una cadena VACIA no significa "desactivado": el exportador la valida y revienta el arranque con
+  #    "Invalid endpoint, must start with http:// or https://". Por eso lo que se apaga es la
+  #    EXPORTACION (`management.tracing.export.enabled`), y el endpoint lleva siempre un valor valido.
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: #[[${OTEL_ENDPOINT:http://localhost:4318/v1/traces}]]#
+  tracing:
+    # La exportacion va APAGADA por defecto: sin colector no tiene sentido, y ademas asi el valor del
+    # endpoint da igual. Se enciende por entorno (en dev ya viene encendida).
+    export:
+      enabled: #[[${OTEL_ENABLED:false}]]#
+    sampling:
+      # ⚠️ 1.0 = se traza TODO. Bien en local y en pruebas; en produccion con trafico real es caro en
+      # red y en almacenamiento. Ahi se baja (0.1 = una de cada diez) con la variable de entorno.
+      probability: #[[${OTEL_SAMPLING:1.0}]]#
+
 # === LOGGING ===
 # El FORMATO esta en logback-spring.xml (texto en local, JSON en el resto). Aqui solo los NIVELES, que
 # son lo que se toca en caliente: subir el detalle de un paquete en produccion sin reconstruir nada.
@@ -162,6 +193,18 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+# El colector de trazas que levanta el compose. Con esto, `make run` ya exporta y las trazas se ven en
+# http://localhost:16686 sin configurar nada mas.
+management:
+  tracing:
+    export:
+      enabled: true
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
 
 app:
   cors:

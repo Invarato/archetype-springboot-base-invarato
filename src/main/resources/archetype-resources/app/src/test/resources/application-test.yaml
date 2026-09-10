@@ -30,6 +30,13 @@ spring:
 
 # springdoc encendido en tests: es lo que permite a OpenApiContractIT pedir /v3/api-docs y comprobar que
 # el contrato versionado sigue coincidiendo con el codigo. En produccion sigue apagado.
+# Sin exportacion de trazas en los tests: no hay colector, y arrancar el exportador solo anadiria ruido
+# y latencia a cada contexto que se levanta. La correlacion (traceId) sigue funcionando igual.
+management:
+  tracing:
+    export:
+      enabled: false
+
 springdoc:
   api-docs:
     enabled: true
@@ -45,3 +52,4 @@ app:
     jwt-secret: test-only-secret-no-usar-fuera-de-los-tests-min-32-bytes
   cors:
     allowed-origins: http://localhost:3000
+

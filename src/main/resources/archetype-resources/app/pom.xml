@@ -25,6 +25,21 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <!--
+          Trazas distribuidas (OpenTelemetry).
+
+          Este starter es de Spring Boot 4 y sustituye al montaje manual que hacia falta antes
+          (micrometer-tracing + puente de OTel + exportador, cada uno por su lado). Trae la
+          instrumentacion, el contexto de propagacion y el exportador OTLP.
+
+          Que aporta sobre la correlacion que ya habia: el traceId en el log te deja seguir una peticion
+          DENTRO de este servicio; esto te deja seguirla ENTRE servicios, que es donde se pierde el tiempo
+          cuando algo va lento y nadie sabe en que salto.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
+        <!--
           Expone /actuator/prometheus para que lo raspe Prometheus. Sin version: la gestiona el BOM de
           Spring Boot importando el de Micrometer.
         -->
