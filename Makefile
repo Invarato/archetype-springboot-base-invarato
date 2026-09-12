@@ -1,4 +1,4 @@
-.PHONY: help clean build generate rebuild check test-generated verify publish all
+.PHONY: help clean build generate rebuild check check-post test-generated verify publish all
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════
 # Flujo de trabajo del ARQUETIPO.
@@ -105,6 +105,11 @@ generate:
 check:
 	@./scripts/check-generated.sh "$(GEN_DIR)"
 
+# Las comprobaciones que necesitan el proyecto YA construido (codigo generado en target/).
+# Van aparte porque `check` corre ANTES del build: metidas alli se saltaban en silencio.
+check-post:
+	@CHECK_FASE=post ./scripts/check-generated.sh "$(GEN_DIR)"
+
 test-generated:
 	@echo -e "$(GREEN)🧪 mvn verify sobre el proyecto generado...$(NC)"
 	@command -v docker >/dev/null 2>&1 || { echo -e "$(RED)✗ no hay docker: los *IT con Testcontainers no pueden correr$(NC)"; exit 1; }
@@ -114,7 +119,7 @@ test-generated:
 rebuild: clean build generate
 
 # EL GATE. Es lo que debe estar en verde antes de dar por bueno cualquier cambio, y lo que corre el CI.
-verify: rebuild check test-generated
+verify: rebuild check test-generated check-post
 	@echo ""
 	@echo -e "$(GREEN)══════════════════════════════════════════════════════════$(NC)"
 	@echo -e "$(GREEN)✓ El arquetipo genera un proyecto que compila y pasa sus tests$(NC)"

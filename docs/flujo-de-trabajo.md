@@ -53,6 +53,22 @@ nos comimos**, no a una hipótesis; los códigos `G*` remiten a
 | **C8** | Los clientes generan código de verdad | Un generador mal configurado no falla: no genera nada, el módulo compila vacío y quien consume se encuentra un jar sin clases. |
 | **C9** | Los tests usan la **misma versión de Redis** que el compose | Estuvieron descuadradas (tests con `redis:7-alpine`, entorno real con `redis:8`). Es el peor descuadre posible: la suite da verde sobre un motor distinto del que se despliega. |
 | **C10** | El ejemplo de `client-python` es Python válido | Es código que se publica y que **nadie ejecuta en el build**: sin esto, un paréntesis mal puesto viajaría a todos los proyectos generados. Se salta si no hay `python3` (el runner de CI sí lo tiene). |
+| **C11** | El cliente **Python** también genera código | C8 solo miraba el de Java: el módulo de Python podía estar generando cero módulos sin que nadie se enterase. |
+| **C12** | El ejemplo de Python usa una API que **existe** | Renombrar un método de un controlador cambia su `operationId` y, con él, los nombres del cliente generado (G31). Sin esto, el ejemplo quedaría llamando a métodos que ya no existen. Es lo que `ClienteGeneradoTest` hace por el lado Java, pero sin necesitar un intérprete de Python. |
+
+### Dos fases, y por qué
+
+`check` corre **antes** del build y `check-post` **después**:
+
+```
+make verify  =  rebuild → check → mvn verify del generado → check-post
+```
+
+No es una floritura. **C8 nunca llegó a ejecutarse**: necesita el código generado en `target/`, pero
+`check` corría antes de construir nada, así que su guarda `if [ -d ... ]` la saltaba en silencio — y el
+resumen seguía diciendo que estaban todas OK. Ahora las que dependen del build viven en la fase `post`, y
+el total del resumen **se cuenta** en vez de escribirse a mano, que es lo que permitió que el número
+mintiera durante semanas.
 
 ⚠️ **Una comprobación que nunca falla no vale nada.** Si añades una, pruébala rompiendo el proyecto generado
 a propósito y comprobando que se pone roja. Las de arriba se verificaron así — salvo C10, cuyo camino de

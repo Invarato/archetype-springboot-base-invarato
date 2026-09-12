@@ -16,12 +16,25 @@ LC_ALL=C.UTF-8; export LC_ALL
 GEN="${1:?Falta el directorio del proyecto generado}"
 TPL="${2:-$(cd "$(dirname "$0")/.." && pwd)/src/main/resources/archetype-resources}"
 
+# `pre`  = sobre los ficheros generados, sin necesidad de haberlos construido (lo normal).
+# `post` = las que necesitan el proyecto YA construido (codigo generado en target/).
+# El Makefile ejecuta las dos fases: `check` antes del build y `check-post` despues.
+FASE="${CHECK_FASE:-pre}"
+
 fallos=0
-ok()   { printf '  \033[0;32m✓\033[0m %s\n' "$1"; }
+pasadas=0
+# ⚠️ El total se CUENTA, no se escribe a mano. Antes era un literal en el mensaje final y llego a
+# decir "10 comprobaciones OK" mientras una de ellas se saltaba en silencio.
+ok()   { printf '  \033[0;32m✓\033[0m %s\n' "$1"; pasadas=$((pasadas+1)); }
 fail() { printf '  \033[0;31m✗\033[0m %s\n' "$1"; fallos=$((fallos+1)); }
 
-echo "Comprobando el proyecto generado en: $GEN"
+# Usado por C10 (fase pre) y por C12 (fase post).
+EJEMPLO_PY="$GEN/client-python/ejemplo.py"
 
+echo "Comprobando el proyecto generado en: $GEN (fase: $FASE)"
+
+# Las de aqui abajo solo necesitan los ficheros generados, no el proyecto construido.
+if [ "$FASE" = "pre" ]; then
 # ── C1 · Placeholders sin resolver ──────────────────────────────────────────────────────────
 # Fallo real: cinco ficheros de test salian con lineas que empezaban por `{groupId}.` porque en la
 # plantilla les faltaba el prefijo `import $`. Compilaban en el arquetipo (es texto) y reventaban al
@@ -105,14 +118,6 @@ else
   ok "C7 el contrato viaja y no publica entidades"
 fi
 
-# ── C8 · Los clientes generan codigo de verdad ──────────────────────────────────────────────
-# Un generador mal configurado no falla: no genera nada, el modulo compila vacio y el consumidor se
-# encuentra un jar sin clases. Se comprueba solo si ya se ha construido el proyecto.
-if [ -d "$GEN/client-java/target/generated-sources" ]; then
-  n=$(find "$GEN/client-java/target/generated-sources" -name '*.java' 2>/dev/null | wc -l)
-  [ "$n" -gt 0 ] && ok "C8 el cliente Java genera codigo ($n ficheros)" \
-                 || fail "C8 el cliente Java no ha generado ninguna clase"
-fi
 
 # ── C9 · Los tests corren la MISMA version de Redis que el compose ──────────────────────────
 # Estuvieron descuadradas (tests con redis:7-alpine, compose con redis:8.x). Es el peor descuadre
@@ -152,10 +157,54 @@ for basura in __gitignore old__Dockerfile; do
   [ -e "$GEN/$basura" ] && fail "C6 '$basura' no deberia generarse" || true
 done
 ok "C6 sin ficheros muertos conocidos"
+fi
+
+# ── C8 · Los clientes generan codigo de verdad ──────────────────────────────────────────────
+# Un generador mal configurado no falla: no genera nada, el modulo compila vacio y el consumidor se
+# encuentra un jar sin clases.
+#
+# ⚠️ Necesita el proyecto YA CONSTRUIDO, y ahi estuvo el fallo: `make verify` ejecuta `check` ANTES
+# del build, asi que esta comprobacion se saltaba siempre en silencio — y el resumen seguia diciendo
+# que estaban todas OK. Ahora las que dependen del build viven en la fase `post` y el Makefile las
+# ejecuta despues. Es la misma leccion de siempre: una comprobacion que nunca se ejecuta no existe.
+if [ "$FASE" = "post" ]; then
+  n=$(find "$GEN/client-java/target/generated-sources" -name '*.java' 2>/dev/null | wc -l)
+  [ "$n" -gt 0 ] && ok "C8 el cliente Java genera codigo ($n ficheros)" \
+                 || fail "C8 el cliente Java no ha generado ninguna clase"
+
+  # ── C11 · El cliente Python tambien genera ────────────────────────────────────────────────
+  # C8 solo miraba el de Java: el modulo de Python podia estar generando cero ficheros sin que nadie
+  # se enterase.
+  PY_GEN="$GEN/client-python/target/generated-sources/python/api_client"
+  np=$(find "$PY_GEN" -name '*.py' 2>/dev/null | wc -l)
+  [ "$np" -gt 0 ] && ok "C11 el cliente Python genera codigo ($np ficheros)" \
+                  || fail "C11 el cliente Python no ha generado ningun modulo"
+
+  # ── C12 · El ejemplo de Python usa una API que EXISTE ─────────────────────────────────────
+  # El equivalente de lo que hace ClienteGeneradoTest con el cliente Java, pero sin necesitar un
+  # interprete de Python: se comprueba que cada metodo y cada clase que usa el ejemplo estan de
+  # verdad en el cliente generado.
+  #
+  # Cubre el riesgo real: renombrar un metodo de un controlador cambia el operationId, y con el los
+  # nombres del cliente generado (ver G31). Sin esto, el ejemplo de Python quedaria apuntando a
+  # metodos que ya no existen y nadie se enteraria hasta ejecutarlo a mano.
+  if [ "$np" -gt 0 ] && [ -f "$EJEMPLO_PY" ]; then
+    c12_ok=true
+    for metodo in $(grep -oE 'cliente\.[a-z_]+\(' "$EJEMPLO_PY" | sed 's/cliente\.//; s/($//' | sort -u); do
+      grep -rq "def ${metodo}(" "$PY_GEN" 2>/dev/null \
+        || { fail "C12 el ejemplo llama a '$metodo()', que no existe en el cliente generado"; c12_ok=false; }
+    done
+    for simbolo in $(grep -oE 'api_client\.[A-Z][A-Za-z]*' "$EJEMPLO_PY" | sed 's/api_client\.//' | sort -u); do
+      grep -q "\"$simbolo\"" "$PY_GEN/__init__.py" 2>/dev/null \
+        || { fail "C12 el ejemplo usa 'api_client.$simbolo', que el cliente generado no exporta"; c12_ok=false; }
+    done
+    $c12_ok && ok "C12 el ejemplo de Python encaja con el cliente generado"
+  fi
+fi
 
 echo
 if [ "$fallos" -eq 0 ]; then
-  printf '\033[0;32m✓ %s comprobaciones estructurales OK\033[0m\n' "10"
+  printf '\033[0;32m✓ %s comprobaciones estructurales OK (fase %s)\033[0m\n' "$pasadas" "$FASE"
   exit 0
 fi
 printf '\033[0;31m✗ %s comprobacion(es) fallidas\033[0m\n' "$fallos"

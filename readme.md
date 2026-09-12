@@ -86,7 +86,7 @@ Por eso aquí el gate no es el build del arquetipo, sino:
 make verify    # instala el arquetipo → genera un proyecto → lo compila, comprueba y pasa sus tests
 ```
 
-Incluye diez comprobaciones estructurales que el compilador no puede ver, y **cada una viene de un fallo
+Incluye doce comprobaciones estructurales que el compilador no puede ver, y **cada una viene de un fallo
 real**: placeholders sin sustituir, documentación que perdió líneas al filtrarse, un `devcontainer.json`
 que no parsea, el wrapper sin permisos de ejecución, manifiestos referenciados que no existen, una
 entidad publicada en el contrato, o los tests corriendo una versión de Redis distinta de la que se

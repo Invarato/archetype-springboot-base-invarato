@@ -499,6 +499,19 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   total**. Lo vigila `NPlusUnoIT`, que no comprueba el resultado sino **cuantas sentencias** se
   ejecutaron — la unica forma de que un N+1 se ponga rojo, porque nunca falla: solo va lento, y con pocos
   datos ni eso.
+- **G43 · Una comprobacion que no se ejecuta, y un contador escrito a mano que lo tapaba.** C8 necesita
+  el proyecto ya construido, pero `make verify` ejecutaba `check` ANTES del build: su guarda
+  `if [ -d target/... ]` la saltaba **siempre**, en silencio. Y el resumen final decia «10 comprobaciones
+  OK» porque el numero era un literal en el `printf`. Dos fallos que se protegian entre si: la
+  comprobacion no corria y el contador juraba que si. Arreglado con dos fases (`check` y `check-post`) y
+  contando las que pasan de verdad. La leccion no es nueva —«una comprobacion que nunca falla no vale
+  nada»— pero esta vez se la aplico el propio script.
+- **G44 · Un `${VAR:defecto}` sin escapar rompe la generacion entera, y menos mal.** Se comprobo
+  metiendo uno a proposito: Velocity aborta y dice exactamente donde
+  (`application.yaml: Encountered ":valor-por-defecto}" at line 333, column 30`). Por eso NO hace falta
+  una comprobacion propia: el fallo es ruidoso y preciso, y llega antes de que exista nada que
+  comprobar. Lo que si hay que recordar es la forma correcta: `#[[${VAR:defecto}]]#`. Un `${sin.dos.puntos}`
+  pasa tal cual sin escapar, porque Velocity deja las referencias que no conoce.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
