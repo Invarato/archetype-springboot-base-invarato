@@ -128,6 +128,25 @@ else
   fail "C9 version de Redis descuadrada: tests '$REDIS_TEST' vs compose '$REDIS_COMPOSE'"
 fi
 
+# ── C10 · El ejemplo de Python al menos compila ─────────────────────────────────────────────
+# Es codigo que se publica y que nadie ejecuta en el build: sin esto, un parentesis mal puesto viaja
+# a todos los proyectos generados. No comprueba que funcione —para eso haria falta el servicio
+# levantado y el paquete instalado—, solo que es Python valido.
+#
+# ⚠️ Se SALTA si no hay python3. El devcontainer no lo traia cuando se escribio esto, pero el runner
+# de CI si, que es donde importa que no se cuele.
+EJEMPLO_PY="$GEN/client-python/ejemplo.py"
+if [ ! -f "$EJEMPLO_PY" ]; then
+  fail "C10 falta client-python/ejemplo.py"
+elif ! command -v python3 >/dev/null 2>&1; then
+  ok "C10 sin python3 aqui: no se comprueba el ejemplo (CI si lo hace)"
+elif python3 -m py_compile "$EJEMPLO_PY" 2>/dev/null; then
+  ok "C10 el ejemplo de Python compila"
+else
+  fail "C10 client-python/ejemplo.py no es Python valido:"
+  python3 -m py_compile "$EJEMPLO_PY" 2>&1 | sed 's/^/       /'
+fi
+
 # ── C6 · Ficheros que no deberian viajar ────────────────────────────────────────────────────
 for basura in __gitignore old__Dockerfile; do
   [ -e "$GEN/$basura" ] && fail "C6 '$basura' no deberia generarse" || true
@@ -136,7 +155,7 @@ ok "C6 sin ficheros muertos conocidos"
 
 echo
 if [ "$fallos" -eq 0 ]; then
-  printf '\033[0;32m✓ %s comprobaciones estructurales OK\033[0m\n' "9"
+  printf '\033[0;32m✓ %s comprobaciones estructurales OK\033[0m\n' "10"
   exit 0
 fi
 printf '\033[0;31m✗ %s comprobacion(es) fallidas\033[0m\n' "$fallos"

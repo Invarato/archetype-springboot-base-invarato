@@ -25,8 +25,33 @@ make verify        # tests unitarios + integración (*IT.java, necesita Docker)
 
 #[[##]]# Estructura
 
-Es un proyecto **multi-módulo** aunque de momento solo haya un servicio: así el contrato y los clientes
-generados tienen dónde vivir sin tener que reorganizarlo todo más adelante.
+Es un proyecto **multi-módulo** aunque solo haya un servicio: el contrato y los clientes generados
+necesitan vivir en algún sitio, y separarlos después cuesta mucho más que empezar así.
+
+```mermaid
+graph TD
+    subgraph reactor["pom.xml (padre)"]
+        app["<b>app</b><br/>el microservicio<br/>jar ejecutable + imagen"]
+        contract["<b>contract</b><br/>openapi.json<br/>versionado en git"]
+        cj["<b>client-java</b><br/>jar para consumir la API"]
+        cp["<b>client-python</b><br/>paquete para consumir la API"]
+    end
+
+    app -- "1· lo genera desde el código<br/>y falla si no coincide" --> contract
+    contract -- "2· openapi-generator" --> cj
+    contract -- "3· openapi-generator" --> cp
+
+    consumidor["otro servicio<br/>o un script"] -.- cj
+    consumidor -.- cp
+```
+
+**La flecha 1 es la que manda y solo va en ese sentido.** El contrato no se escribe a mano: sale del
+código de `app` y se guarda versionado en `contract`. Si alguien cambia un controlador y no actualiza el
+contrato, `OpenApiContractIT` pone el build en rojo — por eso los clientes nunca describen una API que ya
+no existe.
+
+Los clientes **no dependen de `contract` por Maven**: leen el `openapi.json` por ruta de fichero. Así el
+jar del cliente no arrastra nada del servidor, que es justo lo que no quieres darle a quien te consume.
 
 ```
 pom.xml            padre: la versión, las versiones de dependencias y los plugins comunes
@@ -34,13 +59,12 @@ pom.xml            padre: la versión, las versiones de dependencias y los plugi
 app/               EL MICROSERVICIO. Lo único que produce un jar ejecutable y una imagen Docker
   src/main/java/           controladores, servicios, repositorios, entidades, DTOs y mappers
   src/main/resources/      application.yaml y las migraciones de db/migration
-contract/          el contrato OpenAPI, y más adelante los clientes Java/Python y stubs generados
-compose-app.yml    Postgres y Redis para desarrollo
-helm/            el chart de despliegue, con values por entorno
+contract/          el contrato OpenAPI versionado (src/main/resources/openapi/openapi.json)
+client-java/       cliente Java generado del contrato — ver EjemploDeUso para empezar
+client-python/     cliente Python generado del contrato — ver ejemplo.py
+helm/              el chart de despliegue, con values por entorno
 Dockerfile · compose-app.yml · .devcontainer/
 ```
-
-⚠️ La dependencia va siempre `contract` ← `app`, nunca al revés.
 
 #[[##]]# Configuración
 
@@ -94,4 +118,20 @@ tropiezos que aparecieron al montarla:
 
 #[[##]]# Licencia
 
-Define la que quieras en el POM.
+Este proyecto **no trae licencia, a propósito**: el código es tuyo y decides tú. Lo más habitual en un
+servicio interno es no ponerle ninguna, y así se queda como todos los derechos reservados.
+
+El arquetipo del que salió es MIT y **su licencia no se hereda**: no tienes que atribuir nada ni
+publicar nada. Puedes usar esto en un producto privado, comercial o cerrado.
+
+Si sí vas a publicarlo, entonces sí hace falta elegir: añade un fichero `LICENSE` en la raíz y decláralo
+en el `pom.xml` del padre, para que quede también en los artefactos que publiques.
+
+```xml
+<licenses>
+    <license>
+        <name>MIT License</name>
+        <url>https://opensource.org/licenses/MIT</url>
+    </license>
+</licenses>
+```

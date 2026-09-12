@@ -102,10 +102,28 @@
             </includes>
         </fileSet>
 
+        <!-- El ejemplo de uso y su test. En src/test para que NO viajen dentro del jar publicado. -->
+        <fileSet filtered="true" packaged="true">
+            <directory>client-java/src/test/java</directory>
+        </fileSet>
+
         <fileSet encoding="UTF-8" filtered="true">
             <directory>client-python</directory>
             <includes>
                 <include>pom.xml</include>
+            </includes>
+        </fileSet>
+
+        <!--
+          ⚠️ SIN filtrar, y no es por comodidad: en Python los comentarios empiezan por `#`, que es
+          justo el caracter de las directivas de Velocity. Un `##` se lo comeria entero como comentario
+          suyo (es el fallo G17, que ya nos costo 54 lineas de un markdown). Como el ejemplo no lleva
+          ningun placeholder del arquetipo, lo mas seguro es que Velocity ni lo mire.
+        -->
+        <fileSet encoding="UTF-8" filtered="false">
+            <directory>client-python</directory>
+            <includes>
+                <include>**/*.py</include>
             </includes>
         </fileSet>
 

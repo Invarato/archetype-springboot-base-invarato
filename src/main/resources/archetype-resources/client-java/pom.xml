@@ -50,6 +50,17 @@
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
+
+        <!--
+          Solo para ClienteGeneradoTest, que comprueba que el cliente generado habla de verdad con un
+          servidor. Al ser `test`, NO llega a quien consuma este jar: el cliente sigue teniendo las
+          cuatro dependencias de arriba y nada mas, que es parte de su gracia.
+        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

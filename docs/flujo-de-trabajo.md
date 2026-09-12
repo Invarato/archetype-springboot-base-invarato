@@ -52,9 +52,11 @@ nos comimos**, no a una hipótesis; los códigos `G*` remiten a
 | **C7** | El contrato viaja y **no publica entidades** | El cliente Java generado traía una clase `MyTable` con la forma de la tabla: un cambio en la base de datos se habría convertido en un cambio de la API, y de ahí a todos los consumidores. |
 | **C8** | Los clientes generan código de verdad | Un generador mal configurado no falla: no genera nada, el módulo compila vacío y quien consume se encuentra un jar sin clases. |
 | **C9** | Los tests usan la **misma versión de Redis** que el compose | Estuvieron descuadradas (tests con `redis:7-alpine`, entorno real con `redis:8`). Es el peor descuadre posible: la suite da verde sobre un motor distinto del que se despliega. |
+| **C10** | El ejemplo de `client-python` es Python válido | Es código que se publica y que **nadie ejecuta en el build**: sin esto, un paréntesis mal puesto viajaría a todos los proyectos generados. Se salta si no hay `python3` (el runner de CI sí lo tiene). |
 
 ⚠️ **Una comprobación que nunca falla no vale nada.** Si añades una, pruébala rompiendo el proyecto generado
-a propósito y comprobando que se pone roja. Las nueve de arriba se verificaron así.
+a propósito y comprobando que se pone roja. Las de arriba se verificaron así — salvo C10, cuyo camino de
+comprobación real solo se ejercita donde hay `python3`; aquí solo se verificó que se salta bien.
 
 ## Variables
 

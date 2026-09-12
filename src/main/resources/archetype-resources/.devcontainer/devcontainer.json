@@ -38,6 +38,12 @@
     // ademas ese socket es root en el anfitrion.
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
 
+    // Para el modulo client-python: sin esto el proyecto genera un cliente Python que no se puede
+    // ni instalar ni ejecutar dentro del propio entorno de desarrollo.
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13"
+    },
+
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 

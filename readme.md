@@ -1,8 +1,4 @@
-| **Testcontainers** | Los tests de integración levantan su propio Postgres, aparte del de desarrollo. |
-| **La API contra su contrato** | Schemathesis genera casos desde el esquema y comprueba que la API no devuelve 500 ni responde algo que no case con lo documentado. Encuentra lo que no se te ocurrió probar. |
-| **Documentación sin duplicar** | El **javadoc** es la documentación de la API: acaba en el contrato y, desde ahí, en los clientes generados y en su documentación. Una sola fuente. |
-| **Cobertura** | JaCoCo, sin umbral que rompa el build: sirve para ver qué falta por probar, no como nota que aprobar. |
-| **CI incluida** | El proyecto generado nace con su workflow: tests, cobertura y contraste de la API en un job aparte. |# Maven Archetype: Spring Boot Base (Invarato)
+# Maven Archetype: Spring Boot Base (Invarato)
 
 [![verify](https://github.com/Invarato/archetype-springboot-base-invarato/actions/workflows/verify.yml/badge.svg)](https://github.com/Invarato/archetype-springboot-base-invarato/actions/workflows/verify.yml)
 [![Maven Central](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fjarroba%2Farchetype-springboot-base-invarato%2Fmaven-metadata.xml&style=flat-square&label=Maven%20Central)](https://central.sonatype.com/artifact/com.jarroba/archetype-springboot-base-invarato)
@@ -65,11 +61,15 @@ mi-servicio/
 | **Seguridad siempre activa** | Una sola cadena de filtros, *stateless*, con JWT (OAuth2 Resource Server). **No hay perfil que la apague**, tampoco en los tests. Lo que cambia entre entornos no son las reglas, es de dónde salen los tokens. |
 | **Migraciones con Flyway** | `make db-baseline` genera el `V1__init.sql` desde tus entidades JPA, sin necesitar base de datos. A partir de ahí manda Flyway, y `ddl-auto: validate` hace de detector de deriva: si olvidas una migración, la aplicación no arranca. |
 | **Contrato OpenAPI *code-first*** | Escribes Java y el contrato cae solo. Un test lo compara con el fichero versionado: **ningún cambio de contrato pasa inadvertido**. |
-| **Clientes generados** | Java (con `RestClient`) y Python, desde el contrato. Sin compartir los DTOs del servidor, que ataría al consumidor a tu versión de Boot. |
+| **Clientes generados, con ejemplo** | Java (con `RestClient`) y Python, desde el contrato — y cada uno con un ejemplo de uso ejecutable, para no tener que averiguar cómo se le pone la URL y el token. El de Java lo prueba un test contra un servidor de mentira, así que no puede quedarse obsoleto. Sin compartir los DTOs del servidor, que ataría al consumidor a tu versión de Boot. |
 | **Tests de arquitectura** | ArchUnit impone la estructura que el arquetipo enseña: capas, nombres, inyección por constructor y *nunca* entidades en los controladores. |
 | **Observabilidad** | `/actuator/prometheus`, logs en JSON fuera de local, y `traceId`/`spanId` correlacionados — más la cabecera `X-Trace-Id` en cada respuesta. |
 | **Errores en `ProblemDetail`** | RFC 9457, con los errores de validación campo a campo. |
 | **Testcontainers** | Los tests de integración levantan su propio Postgres, aparte del de desarrollo. |
+| **La API contra su contrato** | Schemathesis genera casos desde el esquema y comprueba que la API no devuelve 500 ni responde algo que no case con lo documentado. Encuentra lo que no se te ocurrió probar. |
+| **Documentación sin duplicar** | El **javadoc** es la documentación de la API: acaba en el contrato y, desde ahí, en los clientes generados y en su documentación. Una sola fuente. |
+| **Cobertura** | JaCoCo, sin umbral que rompa el build: sirve para ver qué falta por probar, no como nota que aprobar. |
+| **CI incluida** | El proyecto generado nace con su workflow: tests, cobertura y contraste de la API en un job aparte. |
 | **Devcontainer** | Con Docker dentro, para poder correr los tests de integración desde el minuto cero. |
 
 ---
@@ -86,7 +86,7 @@ Por eso aquí el gate no es el build del arquetipo, sino:
 make verify    # instala el arquetipo → genera un proyecto → lo compila, comprueba y pasa sus tests
 ```
 
-Incluye nueve comprobaciones estructurales que el compilador no puede ver, y **cada una viene de un fallo
+Incluye diez comprobaciones estructurales que el compilador no puede ver, y **cada una viene de un fallo
 real**: placeholders sin sustituir, documentación que perdió líneas al filtrarse, un `devcontainer.json`
 que no parsea, el wrapper sin permisos de ejecución, manifiestos referenciados que no existen, una
 entidad publicada en el contrato, o los tests corriendo una versión de Redis distinta de la que se
@@ -142,3 +142,12 @@ portal de Sonatype), `GPG_PRIVATE_KEY` y `GPG_PASSPHRASE`.
 ## Licencia
 
 MIT. Ver [LICENSE](LICENSE).
+
+**Y sobre lo que generes con él:** el código que produce este arquetipo es **tuyo**. Úsalo en proyectos
+privados, comerciales o cerrados, sin atribución y sin obligación de publicar nada. La MIT cubre el
+arquetipo; no se pega a su salida.
+
+Se dice aquí explícitamente y no se dan por supuestas las buenas intenciones de nadie: la MIT pide
+conservar el aviso de copyright en «copias o partes sustanciales», y sin una frase como esta cabe
+discutir si un proyecto generado lo es. Con ella no cabe — que es lo que necesita quien tiene que pasar
+por el departamento legal de su empresa antes de usarlo.
