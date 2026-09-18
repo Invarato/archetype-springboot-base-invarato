@@ -161,17 +161,27 @@ management:
       probability: #[[${OTEL_SAMPLING:1.0}]]#
 
 # === LOGGING ===
-# El FORMATO esta en logback-spring.xml (texto en local, JSON en el resto). Aqui solo los NIVELES, que
-# son lo que se toca en caliente: subir el detalle de un paquete en produccion sin reconstruir nada.
+# TODO el logging se configura aqui. No hay logback-spring.xml, y no es un olvido: habia uno de 74
+# lineas de XML —dos appenders, un patron a mano y un encoder externo— y desde Spring Boot 3.4 no hace
+# falta ninguno. Lo unico que aquel fichero hacia y esto no, era escribir el patron de consola: resulta
+# que el patron POR DEFECTO de Boot ya incluye la correlacion (`traceId`/`spanId`), asi que tampoco.
 logging:
   level:
     root: #[[${LOG_LEVEL:INFO}]]#
     ${groupId}: #[[${LOG_LEVEL_APP:DEBUG}]]#
     org.hibernate.SQL: #[[${LOG_LEVEL_SQL:INFO}]]#
 
-  # Ajustes del JSON estructurado. Solo se aplican donde logback usa el encoder estructurado, o sea
-  # fuera de local/dev/test: en dev el log sigue siendo texto con colores.
   structured:
+    # JSON por defecto, texto plano SOLO donde se apaga a proposito (perfiles dev y test).
+    #
+    # El defecto va en este sentido y no al reves porque es el seguro: un entorno que nadie previo
+    # —una nueva `staging`, un despliegue de emergencia— saldra con logs que un recolector entiende. Al
+    # reves, saldria con texto plano y nadie se enteraria hasta querer buscar algo.
+    #
+    # `ecs` = Elastic Common Schema: nombres de campo estandar (@timestamp, log.level, service.name...).
+    # Tambien valen `gelf` (Graylog) y `logstash`.
+    format:
+      console: #[[${LOG_FORMAT:ecs}]]#
     ecs:
       service:
         # El nombre sale de spring.application.name si no se dice otra cosa. El entorno hay que darlo:
@@ -233,6 +243,12 @@ spring:
   config:
     activate:
       on-profile: dev
+
+# Texto plano y legible en desarrollo: aqui los lee una persona, no un recolector.
+logging:
+  structured:
+    format:
+      console: ""
 
   # Spring Boot levanta compose.yaml al arrancar y DEDUCE de ahi las conexiones.
   #

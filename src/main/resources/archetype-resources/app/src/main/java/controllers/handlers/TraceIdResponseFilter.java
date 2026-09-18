@@ -19,8 +19,8 @@ import java.io.IOException;
  * cabecera, quien reporta el fallo trae consigo la clave exacta para encontrar sus lineas de log —
  * incluso a traves de varios servicios, porque el mismo traceId viaja con la peticion.</p>
  *
- * <p>Encaja con el patron de log de {@code logback-spring.xml}, que ya imprime {@code traceId} y
- * {@code spanId}.</p>
+ * <p>Encaja con el patron de consola por defecto de Spring Boot, que ya imprime {@code traceId} y
+ * {@code spanId} cuando hay trazas activas.</p>
  *
  * <p>El valor sale del MDC, que rellena la instrumentacion de trazas. Si no hay tracing activo el MDC
  * viene vacio y el filtro no añade nada: no estorba y no hay que recordar quitarlo.</p>

@@ -656,6 +656,12 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   proyecto referencia `${maven.build.timestamp}`, y no hay ni rastro de Sonar. Configuracion que apunta
   a un problema que este proyecto no tiene: fuera. Si algun dia se añade Sonar y el bug sigue vivo, se
   vuelve a poner con un comentario que diga por que.
+- **G55 · `logback-spring.xml` sobraba entero desde Spring Boot 3.4.** Eran 74 lineas de XML: dos
+  appenders, un patron de consola escrito a mano y un encoder de terceros. Hoy todo eso son propiedades
+  (`logging.structured.*`) y el fichero se ha borrado. Lo unico que parecia insustituible —el patron con
+  `traceId`/`spanId`— resulto estarlo tambien: **el patron por defecto de Boot ya incluye la
+  correlacion** (`LOG_CORRELATION_PATTERN` dentro de `CONSOLE_LOG_PATTERN`). Verificado arrancando el
+  jar con los dos perfiles: `dev` saca texto legible y `prod` saca ECS, sin ningun XML.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el

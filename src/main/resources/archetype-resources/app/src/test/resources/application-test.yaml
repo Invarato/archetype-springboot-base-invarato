@@ -57,6 +57,7 @@ management:
   tracing:
     export:
       enabled: false
+
   # Sin Redis levantado, su comprobacion de salud deja /actuator/health en DOWN y respondiendo 503, y
   # con el se cae el test que verifica que las sondas son publicas — por un motivo que no tiene nada
   # que ver con lo que ese test comprueba.
@@ -66,6 +67,13 @@ management:
   health:
     redis:
       enabled: false
+
+# Texto plano tambien en los tests: la salida la lee una persona buscando por que falla algo, no un
+# recolector de logs.
+logging:
+  structured:
+    format:
+      console: ""
 
 springdoc:
   api-docs:

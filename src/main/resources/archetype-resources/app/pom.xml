@@ -50,8 +50,9 @@
         </dependency>
         <!--
           Los logs en JSON NO llevan dependencia: el logging estructurado viene en Spring Boot desde la
-          3.4 (ver logback-spring.xml y logging.structured en application.yaml). Antes habia aqui un
-          net.logstash.logback:logstash-logback-encoder, que ya no hace falta.
+          3.4 (ver `logging.structured` en application.yaml). Antes habia aqui un
+          net.logstash.logback:logstash-logback-encoder Y un logback-spring.xml de 74 lineas: ya no
+          hace falta ninguno de los dos.
         -->
         <!--   Observabilidad   -->
 
