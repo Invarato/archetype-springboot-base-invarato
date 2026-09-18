@@ -2,7 +2,22 @@
 # Antes convivian application.properties y application.yaml con contenido distinto y solapado: Spring carga
 # los DOS y gana el .properties, asi que editar el .yaml no tenia efecto y nada lo avisaba.
 server:
-  port: 8080
+  # Fijo por defecto, pero sobreescribible con una variable de entorno. Las dos mitades importan:
+  #
+  # - Fijo, porque dentro de un contenedor NO hay colision: cada pod tiene su propia IP. Y hay media
+  #   docena de sitios que dan por hecho el 8080 —las probes del chart, el EXPOSE del Dockerfile, el
+  #   compose, los objetivos del Makefile, el CI—. Un puerto aleatorio ahi no simplifica: rompe.
+  #
+  # - Sobreescribible, porque el problema real aparece en TU maquina, cuando levantas cuatro
+  #   microservicios a la vez y los cuatro quieren el 8080. Ahi se arregla sin tocar ningun fichero:
+  #
+  #       SERVER_PORT=8081 make run
+  #
+  # Si prefieres que sea Spring quien elija, `SERVER_PORT=0` funciona — con el peaje de que despues no
+  # sabes a que puerto llamar: ni `make actuator-health`, ni el enlace de la documentacion, ni el
+  # reenvio de puertos del devcontainer. Para varios servicios a la vez sale mas a cuenta asignar a
+  # cada uno el suyo que dejarlos al azar.
+  port: #[[${SERVER_PORT:8080}]]#
 
 spring:
   application:

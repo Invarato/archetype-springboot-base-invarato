@@ -11,7 +11,11 @@ NC     := \033[0m # No Color
 # Project configuration
 PROJECT_NAME := ${artifactId}
 SPRING_PROFILE ?= dev
-DOCKER_IMAGE_NAME ?= $(PROJECT_NAME)
+# En MINUSCULAS, y no por gusto: Docker rechaza los nombres de repositorio con mayusculas
+# ("repository name must be lowercase"). Con un artifactId en camelCase, `make docker-build` fallaba
+# sin mas explicacion que esa. Es el mismo problema que en el chart de Helm, donde los nombres tienen
+# que cumplir RFC 1123.
+DOCKER_IMAGE_NAME ?= $(shell echo '$(PROJECT_NAME)' | tr '[:upper:]' '[:lower:]')
 DOCKER_IMAGE_TAG ?= latest
 
 # Maven options

@@ -1,4 +1,4 @@
-.PHONY: help clean build generate rebuild check check-post test-generated verify publish all
+.PHONY: help clean build generate rebuild check check-post check-image test-generated verify publish all
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════
 # Flujo de trabajo del ARQUETIPO.
@@ -110,6 +110,17 @@ check:
 check-post:
 	@CHECK_FASE=post ./scripts/check-generated.sh "$(GEN_DIR)"
 
+# Construye la imagen del proyecto generado.
+#
+# ⚠️ Esto faltaba, y el Dockerfile llevaba semanas roto sin que nadie lo supiera: copiaba los pom.xml
+# modulo a modulo y se quedo en dos cuando el proyecto paso a tener cuatro. `mvn verify` no lo ve
+# —no construye imagenes— y la promesa del arquetipo incluye `make docker-build`.
+check-image:
+	@command -v docker >/dev/null 2>&1 || { echo -e "$(RED)✗ no hay docker: no se puede construir la imagen$(NC)"; exit 1; }
+	@echo -e "$(GREEN)🐳 construyendo la imagen del proyecto generado...$(NC)"
+	@cd "$(GEN_DIR)" && docker build -q -t "$(shell echo '$(ARTIFACT_ID)' | tr '[:upper:]' '[:lower:]'):gate" . >/dev/null
+	@echo -e "$(GREEN)✓ la imagen se construye$(NC)"
+
 test-generated:
 	@echo -e "$(GREEN)🧪 mvn verify sobre el proyecto generado...$(NC)"
 	@command -v docker >/dev/null 2>&1 || { echo -e "$(RED)✗ no hay docker: los *IT con Testcontainers no pueden correr$(NC)"; exit 1; }
@@ -119,7 +130,7 @@ test-generated:
 rebuild: clean build generate
 
 # EL GATE. Es lo que debe estar en verde antes de dar por bueno cualquier cambio, y lo que corre el CI.
-verify: rebuild check test-generated check-post
+verify: rebuild check test-generated check-post check-image
 	@echo ""
 	@echo -e "$(GREEN)══════════════════════════════════════════════════════════$(NC)"
 	@echo -e "$(GREEN)✓ El arquetipo genera un proyecto que compila y pasa sus tests$(NC)"

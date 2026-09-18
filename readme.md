@@ -83,7 +83,8 @@ nada avise.
 Por eso aquí el gate no es el build del arquetipo, sino:
 
 ```shell
-make verify    # instala el arquetipo → genera un proyecto → lo compila, comprueba y pasa sus tests
+make verify    # instala el arquetipo → genera un proyecto → lo compila, comprueba, pasa sus tests
+               # y construye su imagen Docker
 ```
 
 Incluye doce comprobaciones estructurales que el compilador no puede ver, y **cada una viene de un fallo
@@ -91,6 +92,9 @@ real**: placeholders sin sustituir, documentación que perdió líneas al filtra
 que no parsea, el wrapper sin permisos de ejecución, manifiestos referenciados que no existen, una
 entidad publicada en el contrato, o los tests corriendo una versión de Redis distinta de la que se
 despliega.
+
+Y **construye la imagen del proyecto generado**, porque `mvn verify` no lo hace: el Dockerfile llegó a
+estar semanas roto sin que nada avisara.
 
 Corre en CI en cada push, en cada PR y una vez por semana — esto último porque las versiones las gestiona
 el BOM de Spring Boot y el build puede romperse sin que nadie toque el repo.

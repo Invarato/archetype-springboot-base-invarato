@@ -334,6 +334,43 @@ Se gana además `service.version` en cada línea, que el encoder anterior no pon
 gobierna el BOM, y 30 líneas de XML que pasan a ser configuración por entorno. Si el formato nativo se
 quedara corto para algún recolector, el encoder externo sigue siendo una opción legítima.
 
+### D14 · Imagen: jar ya construido y por capas · puerto fijo pero sobreescribible (2026-09-18)
+
+**El Dockerfile ya no compila dentro de la imagen.** Antes sí, con Maven, y para aprovechar la caché de
+capas había que copiar los `pom.xml` **módulo a módulo** — o sea, repetir la estructura del proyecto
+dentro del Dockerfile. Cuando el proyecto pasó de dos módulos a cuatro, esa lista se quedó en dos y la
+imagen dejó de construirse (G45). Ahora parte del jar que produce `mvn package`, así que no hay nada que
+repetir. De paso, `docker build` baja a **4 segundos**.
+
+**Y se parte en capas** (`-Djarmode=tools ... extract --layers`). Un jar de Spring Boot son ~60 MB de los
+que tu código es una fracción mínima; copiado entero, cambiar una línea invalida la capa completa y el
+push se lleva los 60 MB otra vez. Con cuatro capas ordenadas por frecuencia de cambio, solo se mueve la
+última.
+
+**¿Y por qué no *buildpacks* (`spring-boot:build-image`), que no necesitan Dockerfile?** Porque generan
+una imagen que no eliges: base Paketo, opaca y difícil de justificar donde exigen una imagen endurecida
+concreta o un registro interno. Un arquetipo es una **base para adaptar**, y un Dockerfile de 40 líneas
+que se lee entero se adapta; un builder no. Quien no tenga esa restricción puede borrar el Dockerfile y
+usar `./mvnw spring-boot:build-image` sin tocar nada más — por eso no se cierra la puerta.
+
+**El puerto: fijo por defecto, sobreescribible con `SERVER_PORT`.** Las dos mitades importan, y confundir
+los dos escenarios es lo que lleva a elegir mal:
+
+- **En el contenedor y en Kubernetes no hay colisión**: cada pod tiene su IP. Un puerto aleatorio ahí no
+  simplifica nada y rompe las probes del chart, el `EXPOSE`, el compose y los objetivos del Makefile.
+- **La colisión aparece en tu máquina**, al levantar varios microservicios a la vez. Se resuelve sin
+  tocar ficheros: `SERVER_PORT=8081 make run`.
+
+`SERVER_PORT=0` (que lo elija Spring) también funciona, pero el peaje es que después no sabes a qué
+puerto llamar: ni `make actuator-health`, ni el enlace de la documentación, ni el reenvío de puertos del
+devcontainer. Para varios servicios sale más a cuenta asignar a cada uno el suyo que dejarlos al azar.
+
+**Y la imagen se construye en la puerta** (`make check-image`). Era el agujero que permitió que estuviera
+rota semanas: `mvn verify` no construye imágenes, así que nadie se enteraba.
+
+**Qué reabriría esto:** una política de empresa que imponga imágenes producidas por buildpacks o por una
+cadena de build propia.
+
 ---
 
 ## Auditoría contra prácticas obsoletas (2026-09-10)
@@ -512,6 +549,25 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   una comprobacion propia: el fallo es ruidoso y preciso, y llega antes de que exista nada que
   comprobar. Lo que si hay que recordar es la forma correcta: `#[[${VAR:defecto}]]#`. Un `${sin.dos.puntos}`
   pasa tal cual sin escapar, porque Velocity deja las referencias que no conoce.
+- **G45 · El Dockerfile llevaba semanas roto y nadie podia saberlo.** Compilaba dentro de la imagen y,
+  para cachear dependencias, copiaba los `pom.xml` uno a uno: `contract` y `app`. Al pasar el proyecto a
+  cuatro modulos, `docker build` empezo a fallar con «Child module /workspace/client-java does not
+  exist». **La puerta no lo veia porque `mvn verify` no construye imagenes.** Dos lecciones: un fichero
+  que REPITE la estructura del proyecto se desincroniza (la solucion no fue actualizar la lista, fue
+  eliminarla), y todo lo que el arquetipo promete tiene que ejecutarse en la puerta — ahora hay
+  `make check-image`.
+- **G46 · Docker exige el nombre de imagen en MINUSCULAS.** Con un `artifactId` en camelCase,
+  `make docker-build` del proyecto generado fallaba con «repository name must be lowercase», y ya esta:
+  ninguna pista de que el problema era el nombre del proyecto. Es el mismo fallo que G29 con Helm y RFC
+  1123, en otra herramienta: **lo que tu llamas al proyecto acaba siendo el nombre de objetos que tienen
+  sus propias reglas**. Ahora el Makefile lo pasa a minusculas.
+- **G47 · Un HEALTHCHECK que no usaba nadie y metia red en el build.** Para poder hacerlo con `curl`
+  habia un `apt-get install` en el Dockerfile: una capa mas, mas tamaño y —lo caro— una **dependencia de
+  red en tiempo de build**, que es de las cosas que rompen un dia sin avisar (de hecho rompio). Y el
+  consumidor no existia: **Kubernetes ignora el HEALTHCHECK de Docker** —usa las probes del Deployment,
+  que estan en el chart— y el compose de este proyecto levanta Postgres y Redis, no la aplicacion. La
+  imagen base (JRE sobre Ubuntu) no trae curl ni wget ni nc. Fuera, con la receta de tres lineas en un
+  comentario por si alguien lo necesita.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
