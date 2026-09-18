@@ -1,5 +1,7 @@
 package ${groupId}.dtos.responses;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Datos de un registro.
  *
@@ -15,6 +17,10 @@ public record MyTableResponse(
         String name,
         String surname,
         String description,
+        // ⚠️ Puede venir a null y el contrato TIENE que decirlo. Sin esto, OpenAPI 3.1 lo declara
+        // `type: integer` a secas, un cliente estricto rechaza la respuesta y el fallo aparece en el
+        // consumidor. Lo destapo Schemathesis: «null is not of type integer».
+        @Schema(nullable = true)
         Long myTableParentId
 ) {
 }

@@ -662,6 +662,21 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   `traceId`/`spanId`— resulto estarlo tambien: **el patron por defecto de Boot ya incluye la
   correlacion** (`LOG_CORRELATION_PATTERN` dentro de `CONSOLE_LOG_PATTERN`). Verificado arrancando el
   jar con los dos perfiles: `dev` saca texto legible y `prod` saca ECS, sin ningun XML.
+- **G56 · Schemathesis encontro cuatro respuestas 500 que eran culpa del cliente.** Ejecutarlo por
+  primera vez contra la API de ejemplo saco 26 hallazgos. Los de fondo eran todos el mismo patron: una
+  excepcion sin manejador propio cae en el `@ExceptionHandler(Exception.class)` y la API responde **500**,
+  o sea se acusa a si misma de un fallo interno por algo que mando mal quien llama. Cinco casos reales:
+  JSON malformado, un id fuera del rango de Long, un metodo HTTP no soportado (era 500 en vez de **405**,
+  y sin cabecera `Allow`), ordenar por un campo inexistente y una cadena de consulta ilegible. Regla que
+  queda: **un 500 significa que el servidor tiene un fallo**; si el error lo causo la peticion, tiene que
+  ser 4xx. Y el contrato no declaraba NINGUN codigo de error, solo el 200 — ahora se documentan de una
+  vez con un `OpenApiCustomizer`, incluidos los campos propios (`timestamp`, `path`, `errors`) que el
+  ProblemDetail de este proyecto añade al estandar.
+- **G57 · El CI del proyecto generado se rompio al hacer aleatorios los puertos del compose.** Arranca la
+  API con `java -jar`, y el jar empaquetado **excluye** el soporte de Docker Compose (lo hace el plugin
+  de Spring Boot: es una herramienta de desarrollo). Sin puertos fijos y sin descubrimiento, «Failed to
+  configure a DataSource». No se vio en `make verify` porque ese job no corre ahi: **solo existe en los
+  proyectos generados**. Ahora el workflow deduce los puertos con `docker compose port`.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el

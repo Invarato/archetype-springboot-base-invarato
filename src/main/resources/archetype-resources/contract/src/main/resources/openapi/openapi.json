@@ -42,7 +42,7 @@
           "myTableParentId" : {
             "description" : "identificador del registro padre, si lo tiene",
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "name" : {
             "description" : "nombre",
@@ -90,6 +90,45 @@
         },
         "type" : "object"
       },
+      "ProblemDetail" : {
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "errors" : {
+            "additionalProperties" : { },
+            "description" : "Solo en errores de validacion: mensaje por cada campo invalido"
+          },
+          "instance" : {
+            "format" : "uri",
+            "type" : "string"
+          },
+          "path" : {
+            "description" : "Ruta de la peticion que fallo"
+          },
+          "properties" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "status" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "timestamp" : {
+            "description" : "Momento en que se genero el error",
+            "format" : "date-time"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "format" : "uri",
+            "type" : "string"
+          }
+        }
+      },
       "SimpleApiResponse" : {
         "description" : "Respuesta simple con un único mensaje.",
         "properties" : {
@@ -132,6 +171,59 @@
               }
             },
             "description" : "los registros existentes; lista vacía si no hay ninguno"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Lista todos los registros.",
@@ -162,6 +254,59 @@
               }
             },
             "description" : "el identificador asignado"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Crea un registro nuevo",
@@ -182,6 +327,59 @@
               }
             },
             "description" : "el texto <code>Hello World</code>"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Devuelve un saludo en texto plano.",
@@ -202,6 +400,59 @@
               }
             },
             "description" : "un mensaje de saludo"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Devuelve un saludo como objeto JSON.",
@@ -247,6 +498,59 @@
               }
             },
             "description" : "una página de registros con sus metadatos de paginación"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Lista los registros de forma paginada",
@@ -270,6 +574,59 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Elimina un registro.",
@@ -298,6 +655,59 @@
               }
             },
             "description" : "el registro encontrado"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Busca un registro por su identificador.",
@@ -330,6 +740,59 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Peticion invalida: validacion, cuerpo ilegible o parametro de tipo incorrecto"
+          },
+          "401" : {
+            "description" : "Falta el token o no es valido (respuesta sin cuerpo)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "El recurso no existe"
+          },
+          "405" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Metodo HTTP no permitido en esta ruta"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Conflicto: integridad de datos o modificacion concurrente"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Error interno no controlado"
           }
         },
         "summary" : "Actualiza un registro existente.",
