@@ -138,18 +138,24 @@ fi
 # a todos los proyectos generados. No comprueba que funcione —para eso haria falta el servicio
 # levantado y el paquete instalado—, solo que es Python valido.
 #
-# ⚠️ Se SALTA si no hay python3. El devcontainer no lo traia cuando se escribio esto, pero el runner
-# de CI si, que es donde importa que no se cuele.
-EJEMPLO_PY="$GEN/client-python/ejemplo.py"
+# ⚠️ Se compila con `compile()` y NO con `python -m py_compile`, que era lo primero que habia aqui:
+# py_compile ESCRIBE un `__pycache__/` al lado del fichero, o sea que una comprobacion de la puerta
+# ensuciaba el proyecto que estaba comprobando. Asi no toca nada.
+#
+# Se salta si no hay python3 — aunque el devcontainer ya lo trae, para que el script siga valiendo en
+# una maquina pelada.
 if [ ! -f "$EJEMPLO_PY" ]; then
   fail "C10 falta client-python/ejemplo.py"
 elif ! command -v python3 >/dev/null 2>&1; then
-  ok "C10 sin python3 aqui: no se comprueba el ejemplo (CI si lo hace)"
-elif python3 -m py_compile "$EJEMPLO_PY" 2>/dev/null; then
-  ok "C10 el ejemplo de Python compila"
+  ok "C10 sin python3 aqui: no se comprueba el ejemplo"
 else
-  fail "C10 client-python/ejemplo.py no es Python valido:"
-  python3 -m py_compile "$EJEMPLO_PY" 2>&1 | sed 's/^/       /'
+  salida=$(python3 -c 'import pathlib,sys; compile(pathlib.Path(sys.argv[1]).read_text(), sys.argv[1], "exec")' "$EJEMPLO_PY" 2>&1)
+  if [ -z "$salida" ]; then
+    ok "C10 el ejemplo de Python es sintacticamente valido"
+  else
+    fail "C10 client-python/ejemplo.py no es Python valido:"
+    echo "$salida" | sed 's/^/       /'
+  fi
 fi
 
 # ── C6 · Ficheros que no deberian viajar ────────────────────────────────────────────────────
