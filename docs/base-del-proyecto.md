@@ -677,6 +677,14 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   de Spring Boot: es una herramienta de desarrollo). Sin puertos fijos y sin descubrimiento, «Failed to
   configure a DataSource». No se vio en `make verify` porque ese job no corre ahi: **solo existe en los
   proyectos generados**. Ahora el workflow deduce los puertos con `docker compose port`.
+- **G58 · `release.yml` en verde no significa publicado en Maven Central.** La v2.0.0: el job "Publicar en
+  Maven Central" termino en verde, pero el artefacto nunca llego a `repo1.maven.org`. Causa: el
+  `central-publishing-maven-plugin` sin `<autoPublish>true</autoPublish>` deja el deployment en estado
+  **VALIDATED** dentro del portal de Sonatype y espera un clic humano en "Publish" — el `mvn deploy` solo
+  sube y valida, no publica. El CI no puede fallar por esto porque, desde su punto de vista, no hay
+  ningun error: hizo exactamente lo que se le pidio. Se añade `autoPublish=true` para que, si los
+  componentes pasan la validacion automatica, salgan solos. Verificacion real de que una release publico
+  de verdad: buscar la version en `repo1.maven.org/maven2/...`, no fiarse del badge de CI.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el

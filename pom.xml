@@ -123,6 +123,14 @@
                 <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>central</publishingServerId>
+                    <!--
+                      Sin esto, el plugin deja el deployment en VALIDATED y hay que entrar al portal de
+                      Sonatype (central.sonatype.com) y pulsar "Publish" a mano. Lo descubrimos en la
+                      v2.0.0: el workflow de release terminó en verde, pero el artefacto nunca llegó a
+                      repo1.maven.org porque nadie dio ese clic. Con autoPublish=true, si los componentes
+                      pasan la validación automática, se publican solos.
+                    -->
+                    <autoPublish>true</autoPublish>
                 </configuration>
             </plugin>
 
