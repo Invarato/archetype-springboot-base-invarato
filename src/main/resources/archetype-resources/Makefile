@@ -150,7 +150,7 @@ verify:
 
 docker-up:
 	@echo "$(GREEN)🐳 Starting Docker services...$(NC)"
-	docker compose -f $(COMPOSE_FILE) up -d
+	docker compose -f $(COMPOSE_FILE) --profile tracing up -d
 	@echo "$(GREEN)✓ Docker services started$(NC)"
 	@echo "$(YELLOW)   PostgreSQL: localhost:5432$(NC)"
 	@echo "$(YELLOW)   Redis: localhost:6379$(NC)"

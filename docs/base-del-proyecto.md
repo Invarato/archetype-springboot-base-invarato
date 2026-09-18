@@ -637,6 +637,19 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   y el mensaje de error mejora: sin esa propiedad, Boot dice «No Docker Compose file found in directory
   '...'» —nombrando el directorio donde busco, que es el dato que hace falta porque la busqueda es
   relativa al directorio de trabajo—; con la propiedad solo dice que ese fichero debe existir.
+- **G53 · Todos los proyectos generados pedian los MISMOS puertos del host.** El compose publicaba
+  `5432:5432`, `6379:6379` y los de Jaeger, asi que levantar un segundo microservicio moria con «port is
+  already allocated». Pasaba desapercibido mientras el compose se levantaba a mano; al hacer que Spring
+  Boot lo levante solo, se convirtio en que el segundo servicio no arranca. Arreglado en dos mitades,
+  porque no todos los puertos son iguales:
+  **Postgres y Redis** pasan a puerto aleatorio (`- '5432'` sin parte de host) y **Spring Boot lo
+  descubre**: su soporte de compose lee el puerto publicado y arma la conexion. Medido con dos proyectos
+  a la vez: 32803 y 32806, sin colision. Para conectarte tu, `docker compose port db-app-postgres 5432`.
+  **Jaeger no puede**, porque su 16686 es una interfaz que abres en el navegador y su 4318 va escrito en
+  la configuracion (Boot tiene descubrimiento para bases de datos y Redis, pero NO para OTLP). Va detras
+  de un perfil de compose: por defecto Spring lo activa y tienes trazas sin hacer nada; para el segundo
+  servicio, `SPRING_DOCKER_COMPOSE_PROFILES_ACTIVE= make run` y exporta al colector del primero, que es
+  lo que quieres de todas formas.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el

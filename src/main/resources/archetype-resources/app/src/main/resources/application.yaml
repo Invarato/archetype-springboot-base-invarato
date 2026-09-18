@@ -257,6 +257,11 @@ spring:
   docker:
     compose:
       enabled: true
+      # Arranca tambien Jaeger (esta detras del perfil `tracing` en compose.yaml). Para levantar un
+      # SEGUNDO microservicio sin chocar con sus puertos fijos:
+      #     SPRING_DOCKER_COMPOSE_PROFILES_ACTIVE= make run
+      profiles:
+        active: tracing
       lifecycle-management: start-only
 
   # El SQL a la vista, SOLO en dev. Estuvo activado para todos los perfiles, produccion incluida, y sale

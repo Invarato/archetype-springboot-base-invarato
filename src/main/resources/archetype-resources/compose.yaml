@@ -7,11 +7,17 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: secret
+    # ⚠️ SIN puerto fijo del host, y es la diferencia entre poder levantar varios microservicios a la vez
+    # o no. Con '5432:5432', el segundo servicio que arranques falla con «port is already allocated»:
+    # todos los proyectos generados con este arquetipo pedirian el mismo puerto.
+    #
+    # Asi, Docker asigna uno libre y Spring Boot LO DESCUBRE: el soporte de compose lee el puerto que ha
+    # quedado publicado y arma la conexion con el. La aplicacion no se entera y tu tampoco.
+    #
+    # Para conectarte tu con psql o un cliente grafico, pregunta cual toco:
+    #     docker compose port db-app-postgres 5432
     ports:
-      - '5432:5432'
-# Para que Spring le asigne un puerto aleatorio unico:
-#    ports:
-#      - '5432'
+      - '5432'
     volumes:
       # ⚠️ El montaje va en /var/lib/postgresql, NO en /var/lib/postgresql/data.
       # Postgres 18 cambio la recomendacion: espera UN solo montaje en /var/lib/postgresql y coloca los
@@ -24,11 +30,10 @@ services:
 
   redis:
     image: redis:8.10.1
+    # Mismo motivo que en Postgres: puerto libre y Spring Boot lo descubre.
+    #     docker compose port redis 6379
     ports:
-      - "6379:6379"
-# Para que Spring le asigne un puerto aleatorio unico:
-#    ports:
-#      - "6379"
+      - "6379"
     restart: always
     labels:
       org.springframework.boot.readiness-check.tcp.disable: true
@@ -40,6 +45,22 @@ services:
   # OpenTelemetry Collector, o el servicio gestionado de tu nube), y la URL se pone en OTEL_ENDPOINT.
   jaeger:
     image: jaegertracing/jaeger:2.20.0
+    # Jaeger SI lleva puertos fijos, al contrario que Postgres y Redis, y por dos motivos:
+    #   - 16686 es una interfaz web que abres tu en el navegador: un puerto al azar significa buscarlo
+    #     cada vez.
+    #   - 4318 es donde exporta la aplicacion, y esa direccion va escrita en application.yaml. Spring
+    #     Boot tiene descubrimiento automatico para bases de datos y Redis, pero NO para OTLP.
+    #
+    # Y como el puerto es fijo, DOS proyectos no pueden levantarlo a la vez: el segundo muere con
+    # «Bind for :::4318 failed: port is already allocated». Por eso esta detras de un perfil de compose:
+    #
+    #   - Por defecto Spring Boot activa el perfil `tracing` (application.yaml, perfil dev), asi que con
+    #     `make run` tienes trazas sin hacer nada.
+    #   - Para el SEGUNDO microservicio, arrancalo sin ese perfil y no habra colision:
+    #         SPRING_DOCKER_COMPOSE_PROFILES_ACTIVE= make run
+    #     Seguira exportando al 4318 del primero, que es lo que quieres: un colector compartido enseña
+    #     las trazas que saltan de un servicio a otro en la misma pantalla.
+    profiles: [tracing]
     ports:
       - "16686:16686"   # interfaz web
       - "4318:4318"     # OTLP sobre HTTP, que es por donde exporta la aplicacion
