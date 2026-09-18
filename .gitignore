@@ -35,4 +35,6 @@ build/
 
 /.mvn/
 
+# Notas y borradores locales: nunca se versionan. La carpeta puede no existir — la regla se queda
+# igualmente, para que crear un `private/` con notas sobre este proyecto sea seguro por defecto.
 /private/
