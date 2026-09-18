@@ -76,15 +76,9 @@ spring:
     locations: classpath:db/migration
 
   # === DOCKER COMPOSE ===
-  # Desactivado a proposito. El soporte de compose de Spring Boot arranca los contenedores y ademas
-  # inyecta los datos de conexion, pero aqui sobraba y estorbaba:
-  #   - `make run` ya levanta compose-app.yml (`make docker-up`), asi que habia DOS mecanismos haciendo
-  #     lo mismo, y dos mecanismos para una cosa es como acaban desincronizados.
-  #   - `spring.docker.compose.file` es una ruta RELATIVA al directorio de trabajo, y como la app se
-  #     arranca con `mvn -pl app`, el proceso corre desde app/ y no encontraba el fichero. El sintoma
-  #     era la aplicacion quejandose de que no hay DataSource, que no apunta a esto por ningun lado.
-  # La conexion se declara explicitamente en el perfil dev: predecible y sin depender del directorio
-  # desde el que arranques.
+  # APAGADO aqui, y ENCENDIDO solo en el perfil `dev` (mas abajo). La distincion importa: con esto a
+  # `true` y sin fichero de compose delante —que es la situacion en produccion— la aplicacion no
+  # arranca. El sitio de esto es el perfil de desarrollo, no la configuracion comun.
   docker:
     compose:
       enabled: false
@@ -240,16 +234,27 @@ spring:
     activate:
       on-profile: dev
 
-  # Los servicios que levanta `make docker-up` (compose-app.yml), en sus puertos publicados. Explicito y
-  # no por descubrimiento: funciona igual lo arranques desde el IDE, desde make o a mano.
-  datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: myuser
-    password: secret
-  data:
-    redis:
-      host: localhost
-      port: 6379
+  # Spring Boot levanta compose-app.yml al arrancar y DEDUCE de ahi las conexiones.
+  #
+  # Por eso aqui no hay ni datasource ni redis: antes estaban, repitiendo el usuario, la contraseña y
+  # los puertos que ya declara compose-app.yml. Dos sitios con el mismo dato es un sitio que algun dia
+  # se queda atras — y el fallo aparece como «password authentication failed», que no señala a nadie.
+  #
+  # Arrancar es una sola orden (`make run`, o el boton del IDE): no hay que acordarse de levantar nada
+  # antes. Si prefieres el control manual, `make docker-up` sigue existiendo y esto se apaga con
+  # `SPRING_DOCKER_COMPOSE_ENABLED=false`.
+  #
+  # ⚠️ Dos detalles que costaron encontrar:
+  #   - `file` es una ruta RELATIVA al directorio de trabajo. Funciona porque el pom de app fija
+  #     `workingDirectory` a la raiz del reactor; sin eso, `mvn -pl app` corre desde app/ y no lo
+  #     encuentra.
+  #   - `start-only`: los contenedores NO se paran al cerrar la aplicacion. Con la gestion completa,
+  #     cada reinicio esperaria otra vez a que Postgres este listo.
+  docker:
+    compose:
+      enabled: true
+      file: compose-app.yml
+      lifecycle-management: start-only
 
   # El SQL a la vista, SOLO en dev. Estuvo activado para todos los perfiles, produccion incluida, y sale
   # caro por partida doble: cada sentencia se formatea y se escribe (con trafico real es muchisimo log

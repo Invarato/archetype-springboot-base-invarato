@@ -91,7 +91,11 @@ help:
 # Development Commands
 # ============================================
 
-run: docker-up
+# Sin `docker-up` delante: en el perfil dev, Spring Boot levanta compose-app.yml el solo y espera a que
+# los servicios esten sanos (spring.docker.compose en application.yaml). Tenerlo aqui TAMBIEN eran dos
+# mecanismos para lo mismo, y dos mecanismos para lo mismo acaban desincronizados.
+# `make docker-up` sigue disponible para levantar solo los servicios, sin la aplicacion.
+run:
 	@echo "$(GREEN)🚀 Running application with profile: $(SPRING_PROFILE)$(NC)"
 	$(MVN) -pl app spring-boot:run -Dspring-boot.run.profiles=$(SPRING_PROFILE)
 
@@ -250,7 +254,7 @@ actuator-metrics:
 # Quick Development Workflows
 # ============================================
 
-dev: docker-up run-dev
+dev: run-dev
 
 rebuild: clean build
 

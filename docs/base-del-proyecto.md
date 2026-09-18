@@ -371,6 +371,30 @@ rota semanas: `mvn verify` no construye imágenes, así que nadie se enteraba.
 **Qué reabriría esto:** una política de empresa que imponga imágenes producidas por buildpacks o por una
 cadena de build propia.
 
+### D15 · El compose de desarrollo lo levanta Spring Boot (2026-09-18)
+
+`make run` ya no necesita `make docker-up` delante: en el perfil `dev`, Spring Boot levanta
+`compose-app.yml`, **espera a que los servicios estén sanos** y deduce de ahí las conexiones. Arrancar es
+una orden, o el botón del IDE.
+
+Estaba desactivado por dos razones, y las dos eran ciertas pero no definitivas:
+
+- *«Dos mecanismos haciendo lo mismo»*. Cierto, y por eso ahora hay uno: `run` ya no depende de
+  `docker-up`, que queda para levantar los servicios sin la aplicación.
+- *«`spring.docker.compose.file` es relativo al directorio de trabajo y `mvn -pl app` corre desde
+  `app/`»*. Cierto, y **tiene arreglo**: `workingDirectory` en el `spring-boot-maven-plugin` apuntando a
+  la raíz del reactor.
+
+**Lo que se gana no es sólo comodidad.** El perfil `dev` repetía usuario, contraseña y puertos que ya
+declara `compose-app.yml`: dos sitios con el mismo dato, y el día que se separan el error es
+«password authentication failed», que no señala a nadie. Ahora esos datos están en un solo sitio.
+
+**Lo que costó:** arreglar la activación del perfil de Maven destapó dos problemas latentes (G48, G49).
+Nada de esto era visible antes, porque el perfil llevaba meses sin activarse.
+
+**Qué reabriría esto:** trabajar habitualmente contra servicios que no están en el compose —una base de
+datos compartida del equipo, por ejemplo—. Se apaga con `SPRING_DOCKER_COMPOSE_ENABLED=false`.
+
 ---
 
 ## Auditoría contra prácticas obsoletas (2026-09-10)
@@ -568,6 +592,22 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   que estan en el chart— y el compose de este proyecto levanta Postgres y Redis, no la aplicacion. La
   imagen base (JRE sobre Ubuntu) no trae curl ni wget ni nc. Fuera, con la receta de tres lineas en un
   comentario por si alguien lo necesita.
+- **G48 · `activeByDefault` se apaga en cuanto se activa CUALQUIER otro perfil del mismo pom.** El perfil
+  `dev` —el que aporta devtools y el soporte de Docker Compose— usaba `activeByDefault`. Justo debajo
+  habia otro, `devcontainer`, que se activa solo con que exista `/.dockerenv`. Resultado: **dentro del
+  devcontainer, que es el entorno que este proyecto recomienda, el perfil `dev` no se activaba nunca**.
+  No fallaba nada: simplemente no habia recarga en caliente ni contenedores automaticos, y no habia por
+  donde sospecharlo. Se ve con `mvn help:active-profiles`, que es lo que conviene mirar antes de creerse
+  que un perfil esta activo. La solucion es activar por propiedad negada
+  (`<property><name>!sinHerramientasDeDesarrollo</name></property>`), que se evalua por su cuenta.
+- **G49 · DevTools en el classpath de los tests rompe la cache, y la propiedad para apagarlo NO basta.**
+  Al arreglar G48, devtools llego por fin al classpath... y los tests de invalidacion de `CacheIT`
+  empezaron a fallar: el valor viejo seguia ahi despues de un `@CacheEvict`. Es el classloader de
+  reinicio, que carga las clases de la aplicacion aparte. Lo traicionero: poner
+  `spring.devtools.restart.enabled: false` en el yaml **parece** el arreglo y no lo es — la propia
+  documentacion de Spring Boot dice que esa propiedad sigue inicializando el classloader de reinicio.
+  Paso: con ella, `CacheIT` en solitario pasaba y en la suite completa fallaba. La solucion es sacarlo
+  del classpath con `classpathDependencyExcludes` en surefire y failsafe.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el

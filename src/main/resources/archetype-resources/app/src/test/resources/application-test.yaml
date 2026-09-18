@@ -31,6 +31,12 @@ spring:
   cache:
     type: none
 
+  # ⚠️ DevTools no se desactiva desde aqui, y no por olvido: se EXCLUYE del classpath de los tests en
+  # el pom (surefire y failsafe). Poner `spring.devtools.restart.enabled: false` parece el arreglo y no
+  # lo es — la documentacion de Spring Boot avisa de que esa propiedad **sigue inicializando el
+  # classloader de reinicio**, que es justo lo que rompia los tests de cache. El motivo completo esta
+  # junto a la exclusion, en app/pom.xml.
+
 # springdoc encendido en tests: es lo que permite a OpenApiContractIT pedir /v3/api-docs y comprobar que
 # el contrato versionado sigue coincidiendo con el codigo. En produccion sigue apagado.
 # Sin exportacion de trazas en los tests: no hay colector, y arrancar el exportador solo anadiria ruido

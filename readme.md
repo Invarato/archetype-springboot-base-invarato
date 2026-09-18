@@ -29,7 +29,7 @@ Y a trabajar:
 ```shell
 cd mi-servicio
 make help          # todo lo que puedes hacer
-make run           # levanta Postgres/Redis y arranca la API en el 8080
+make run           # levanta Postgres/Redis (solo) y arranca la API en el 8080
 make token         # un JWT de desarrollo para llamar a la API
 make verify        # tests unitarios + integración (Testcontainers)
 ```
