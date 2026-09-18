@@ -20,12 +20,15 @@ ENV TZ=${TZ}
 # make: el flujo de trabajo de este repo ES el Makefile (`make rebuild`), y la imagen base no lo trae.
 # gnupg: firmar los artefactos al publicar en Maven Central (maven-gpg-plugin). El dia a dia va con
 #        -Dgpg.skip=true, pero sin gnupg `mvn central-publishing:publish` no arranca.
+# python3: lo necesita la comprobacion C10 de la puerta (valida el ejemplo del cliente Python). Va por
+#        apt y NO por la feature `python`, que ademas mete extensiones del IDE (ms-python, Pylance) y
+#        herramientas pipx que dejaban la carga de extensiones del contenedor colgada.
 # iptables/ipset/dnsmasq/dnsutils/jq: los usa init-firewall.sh (allowlist de salida). Van en la imagen
 #        y no se instalan en caliente a proposito: dentro corren agentes, y el firewall no puede
 #        depender de que haya red para poder levantarse.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      make gnupg iptables ipset dnsmasq dnsutils jq \
+      make gnupg python3 iptables ipset dnsmasq dnsutils jq \
  && rm -rf /var/lib/apt/lists/*
 
 # ── Sobre el sudo ──────────────────────────────────────────────────────────────────────────

@@ -67,14 +67,6 @@
     // La feature pone `privileged` por su cuenta: no hay forma de tener esto sin ello.
     "ghcr.io/devcontainers/features/docker-in-docker:2": { "moby": false },
 
-    // Python: lo necesita la comprobacion C10 de la puerta, que valida el ejemplo de uso del cliente
-    // Python que genera el arquetipo. Sin el, esa comprobacion se SALTA aqui y solo corre en CI — o
-    // sea, te enteras de un fallo tarde y en otro sitio. Es la leccion de G43: una comprobacion que no
-    // se ejecuta no existe.
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.13"
-    },
-
     // Para trabajar contra el repo de GitHub desde dentro (PRs, releases). El Dockerfile ademas cablea
     // git al token de `gh`.
     "ghcr.io/devcontainers/features/github-cli:1": {}

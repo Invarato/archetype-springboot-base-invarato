@@ -57,6 +57,10 @@ ALLOWED_DOMAINS=(
   vsassets.io
   vscode-cdn.net
   prss.microsoft.com
+  # Comprobacion de revocacion (CRL) del certificado con el que se firman las extensiones. Si se
+  # descarta, la verificacion de firma de CADA extension espera ~90 s a su timeout y la carga de
+  # extensiones parece colgada para siempre.
+  digicert.com
   # Descomenta si trabajas con el backend de JetBrains (Gateway se lo baja dentro del contenedor):
   # jetbrains.com
 )
