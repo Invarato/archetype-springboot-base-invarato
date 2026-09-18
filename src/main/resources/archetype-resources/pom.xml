@@ -86,8 +86,6 @@
         <rewrite-spring.version>6.37.1</rewrite-spring.version>
 
         <flatten-maven-plugin.version>1.8.0</flatten-maven-plugin.version>
-
-        <maven.build.timestamp.format>yyyy_MM_dd_HH_mm_ss</maven.build.timestamp.format>
     </properties>
 
     <dependencyManagement>

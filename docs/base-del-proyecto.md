@@ -650,6 +650,12 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   de un perfil de compose: por defecto Spring lo activa y tienes trazas sin hacer nada; para el segundo
   servicio, `SPRING_DOCKER_COMPOSE_PROFILES_ACTIVE= make run` y exporta al colector del primero, que es
   lo que quieres de todas formas.
+- **G54 · `maven.build.timestamp.format`: configuracion heredada que no usaba nadie.** Estaba en el pom
+  de la plantilla con el formato `yyyy_MM_dd_HH_mm_ss` — que es la pinta clasica del apaño para evitar los
+  dos puntos del formato ISO por defecto, que rompen rutas y algunas herramientas. Pero **nada** en el
+  proyecto referencia `${maven.build.timestamp}`, y no hay ni rastro de Sonar. Configuracion que apunta
+  a un problema que este proyecto no tiene: fuera. Si algun dia se añade Sonar y el bug sigue vivo, se
+  vuelve a poner con un comentario que diga por que.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
