@@ -8,6 +8,18 @@
 # El esquema de los tests lo construye FLYWAY desde cero sobre una base efimera, y despues Hibernate lo
 # valida contra las entidades. Ese ciclo completo es el ORACULO del esquema (docs/migraciones.md): si pasa,
 # es que las migraciones se aplican en orden sobre una base vacia Y concuerdan con las entidades.
+# Puerto CERO en los tests: que lo elija el sistema.
+#
+# Hoy ningun test abre un socket —todos usan MockMvc—, pero en cuanto aparezca uno con
+# `webEnvironment = RANDOM_PORT`, o alguien lo ponga sin pensar, heredaria el 8080 del fichero comun. Y
+# ahi llega el clasico: tienes la aplicacion corriendo con `make run` en otra terminal, lanzas los
+# tests y fallan con «Port 8080 was already in use», que no señala al test sino a la maquina. En CI
+# pasa igual con dos jobs en el mismo runner.
+#
+# Poner 0 aqui cuesta una linea y quita esa clase de fallo entera.
+server:
+  port: 0
+
 spring:
   # Se desactivan los imports de configuracion externa (config server, vault...) que el micro pida en runtime
   config:

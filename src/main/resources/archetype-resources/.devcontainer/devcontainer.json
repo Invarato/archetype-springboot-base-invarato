@@ -3,7 +3,7 @@
   //
   // Docker no es opcional aqui: el ciclo normal lo necesita para las DOS cosas que se hacen a diario.
   //   - `make verify` -> los tests de integracion (*IT) levantan Postgres efimeros con Testcontainers.
-  //   - `make run`    -> `compose-app.yml` levanta el Postgres y el Redis de desarrollo.
+  //   - `make run`    -> `compose.yaml` levanta el Postgres y el Redis de desarrollo.
   // Un devcontainer sin Docker solo deja compilar, y eso no es poder trabajar.
   //
   // ⚠️ Docker-in-Docker exige `privileged` (lo pone la propia feature). Un contenedor privilegiado NO
@@ -52,7 +52,7 @@
   // pueda mover bajo los pies.
   "onCreateCommand": "sudo apt-get update && sudo apt-get install -y --no-install-recommends make jq && sudo rm -rf /var/lib/apt/lists/*",
 
-  // 8080 API · 5005 debug de la JVM · 5432 Postgres · 6379 Redis (los dos ultimos, de compose-app.yml)
+  // 8080 API · 5005 debug de la JVM · 5432 Postgres · 6379 Redis (los dos ultimos, de compose.yaml)
   "forwardPorts": [8080, 5005, 5432, 6379],
   "portsAttributes": {
     "8080": { "label": "API", "onAutoForward": "notify" },

@@ -7,7 +7,7 @@
 #
 # ⚠️ Aqui NO se despliegan Postgres ni Redis. Es deliberado: una base de datos dentro del cluster con un
 # Deployment normal es perdida de datos esperando a pasar (no tolera escalado ni actualizaciones
-# rolling). Usa un servicio gestionado o un operador; para desarrollo local ya esta `compose-app.yml`.
+# rolling). Usa un servicio gestionado o un operador; para desarrollo local ya esta `compose.yaml`.
 
 replicaCount: 1
 

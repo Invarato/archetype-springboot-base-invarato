@@ -7,7 +7,7 @@
   //
   // ⚠️ Por que hay Docker aqui, habiendo habido antes un perfil "hardened" sin el:
   // porque sin Docker no se puede comprobar lo unico que importa. El proyecto generado necesita Docker
-  // para sus tests de integracion (Testcontainers) y para su `compose-app.yml`. Un entorno donde solo se
+  // para sus tests de integracion (Testcontainers) y para su `compose.yaml`. Un entorno donde solo se
   // puede compilar deja el `mvn verify` sin correr, que es justo donde viven los fallos que cuestan caro.
   // Ademas el arquetipo se vende como "descargalo y trabaja con agentes": si la caja donde se desarrolla
   // no puede correr Docker, esa promesa es falsa. Se decidio quedarse con un solo perfil, con Docker.

@@ -234,26 +234,29 @@ spring:
     activate:
       on-profile: dev
 
-  # Spring Boot levanta compose-app.yml al arrancar y DEDUCE de ahi las conexiones.
+  # Spring Boot levanta compose.yaml al arrancar y DEDUCE de ahi las conexiones.
   #
   # Por eso aqui no hay ni datasource ni redis: antes estaban, repitiendo el usuario, la contraseña y
-  # los puertos que ya declara compose-app.yml. Dos sitios con el mismo dato es un sitio que algun dia
+  # los puertos que ya declara compose.yaml. Dos sitios con el mismo dato es un sitio que algun dia
   # se queda atras — y el fallo aparece como «password authentication failed», que no señala a nadie.
   #
   # Arrancar es una sola orden (`make run`, o el boton del IDE): no hay que acordarse de levantar nada
   # antes. Si prefieres el control manual, `make docker-up` sigue existiendo y esto se apaga con
   # `SPRING_DOCKER_COMPOSE_ENABLED=false`.
   #
-  # ⚠️ Dos detalles que costaron encontrar:
-  #   - `file` es una ruta RELATIVA al directorio de trabajo. Funciona porque el pom de app fija
-  #     `workingDirectory` a la raiz del reactor; sin eso, `mvn -pl app` corre desde app/ y no lo
-  #     encuentra.
-  #   - `start-only`: los contenedores NO se paran al cerrar la aplicacion. Con la gestion completa,
-  #     cada reinicio esperaria otra vez a que Postgres este listo.
+  # ⚠️ No hay `file:`, y es a proposito. `compose.yaml` es uno de los nombres que Spring Boot busca
+  # solo (junto a compose.yml, docker-compose.yaml y docker-compose.yml), asi que declararlo sobra —
+  # y el mensaje de error es MEJOR sin el: sin `file` dice «No Docker Compose file found in directory
+  # '...'», nombrando el directorio donde busco; con `file` solo dice que ese fichero debe existir.
+  # Y ese directorio es justo el dato que hace falta, porque la busqueda es RELATIVA al directorio de
+  # trabajo. Funciona porque el pom de app fija `workingDirectory` a la raiz del reactor; si arrancas
+  # desde el IDE, pon ahi tambien el directorio de trabajo.
+  #
+  # `start-only`: los contenedores NO se paran al cerrar la aplicacion. Con la gestion completa, cada
+  # reinicio esperaria otra vez a que Postgres este listo.
   docker:
     compose:
       enabled: true
-      file: compose-app.yml
       lifecycle-management: start-only
 
   # El SQL a la vista, SOLO en dev. Estuvo activado para todos los perfiles, produccion incluida, y sale

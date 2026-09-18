@@ -63,7 +63,7 @@ contract/          el contrato OpenAPI versionado (src/main/resources/openapi/op
 client-java/       cliente Java generado del contrato — ver EjemploDeUso para empezar
 client-python/     cliente Python generado del contrato — ver ejemplo.py
 helm/              el chart de despliegue, con values por entorno
-Dockerfile · compose-app.yml · .devcontainer/
+Dockerfile · compose.yaml · .devcontainer/
 ```
 
 #[[##]]# Configuración

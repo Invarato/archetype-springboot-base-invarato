@@ -94,7 +94,7 @@ entidades. Es el oráculo del esquema, y cuesta un test.
 |---|---|---|---|
 | `spring.flyway.enabled` | `true` | `true` | `true` |
 | `spring.jpa.hibernate.ddl-auto` | `validate` | `validate` | `validate` |
-| Base de datos | `compose-app.yml` | Testcontainers (efímera) | la real |
+| Base de datos | `compose.yaml` | Testcontainers (efímera) | la real |
 
 **`ddl-auto` es `validate` siempre.** No hay ningún entorno en el que Hibernate deba tocar el esquema: si
 pudiera, la herramienta de migraciones sería decorativa y la deriva entre entornos aparecería sola. El único

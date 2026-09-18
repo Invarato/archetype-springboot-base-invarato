@@ -124,7 +124,7 @@ fi
 # posible: la suite da verde sobre un motor distinto del que se despliega, asi que un cambio de
 # comportamiento entre versiones mayores no lo ve nadie hasta produccion.
 REDIS_TEST=$(grep -rhoE 'redis:[0-9]+(\.[0-9]+)*(-[a-z]+)?' "$GEN/app/src/test/java" 2>/dev/null | sort -u)
-REDIS_COMPOSE=$(grep -hoE 'redis:[0-9]+(\.[0-9]+)*(-[a-z]+)?' "$GEN/compose-app.yml" 2>/dev/null | sort -u)
+REDIS_COMPOSE=$(grep -hoE 'redis:[0-9]+(\.[0-9]+)*(-[a-z]+)?' "$GEN/compose.yaml" 2>/dev/null | sort -u)
 if [ -z "$REDIS_TEST" ] || [ -z "$REDIS_COMPOSE" ]; then
   ok "C9 sin Redis que contrastar"
 elif [ "$REDIS_TEST" = "$REDIS_COMPOSE" ]; then

@@ -138,7 +138,7 @@ make install
 
 #[[###]]# `make docker-up`
 
-Inicia los servicios Docker definidos en `compose-app.yml`:
+Inicia los servicios Docker definidos en `compose.yaml`:
 - PostgreSQL (puerto 5432)
 - Redis (puerto 6379)
 
@@ -520,7 +520,7 @@ make ci-package
 #[[##]]# Notas Adicionales
 
 - El Makefile utiliza el Maven Wrapper (`./mvnw`) incluido en el proyecto
-- Los servicios Docker se definen en `compose-app.yml`
+- Los servicios Docker se definen en `compose.yaml`
 - Las migraciones las gobierna Flyway (`app/src/main/resources/db/migration/`) y se aplican al arrancar
 - Los colores en la salida ayudan a identificar el estado de las operaciones
 

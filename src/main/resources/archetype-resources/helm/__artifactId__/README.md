@@ -16,7 +16,7 @@ deja de ser repetible.
 
 - **No despliega Postgres ni Redis.** Una base de datos dentro del clúster con un `Deployment` normal es
   pérdida de datos esperando a pasar: no tolera escalado ni actualizaciones rolling. Usa un servicio
-  gestionado o un operador. Para desarrollo local ya está `compose-app.yml`.
+  gestionado o un operador. Para desarrollo local ya está `compose.yaml`.
 - **No crea el Secret.** El chart espera uno que ya exista en el namespace, con las claves `db-username`
   y `db-password`. Poner credenciales en un `values.yaml` versionado las publica en el historial de git
   para siempre, y rotarlas después no las borra de ahí.

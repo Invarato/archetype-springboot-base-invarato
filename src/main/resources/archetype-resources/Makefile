@@ -23,7 +23,7 @@ MAVEN_OPTS ?= -Dmaven.test.skip=false
 MVN := ./mvnw
 
 # Docker compose files
-COMPOSE_FILE := compose-app.yml
+COMPOSE_FILE := compose.yaml
 
 help:
 	@echo "$(GREEN)╔══════════════════════════════════════════════════════════════════╗$(NC)"
@@ -91,7 +91,7 @@ help:
 # Development Commands
 # ============================================
 
-# Sin `docker-up` delante: en el perfil dev, Spring Boot levanta compose-app.yml el solo y espera a que
+# Sin `docker-up` delante: en el perfil dev, Spring Boot levanta compose.yaml el solo y espera a que
 # los servicios esten sanos (spring.docker.compose en application.yaml). Tenerlo aqui TAMBIEN eran dos
 # mecanismos para lo mismo, y dos mecanismos para lo mismo acaban desincronizados.
 # `make docker-up` sigue disponible para levantar solo los servicios, sin la aplicacion.

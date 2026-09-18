@@ -23,7 +23,7 @@ Thumbs.db
 
 # Ignorar archivos de configuración de contenedores
 compose.yml
-compose-app.yml
+compose.yaml
 docker-compose.yml
 docker-compose.override.yml
 

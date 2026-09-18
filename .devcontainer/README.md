@@ -15,7 +15,7 @@ Hubo dos perfiles: uno *hardened* sin Docker (el de por defecto, para los agente
 porque es una decisión de seguridad revisada a la baja a propósito.
 
 **El motivo:** sin Docker no se puede comprobar lo único que importa aquí. El proyecto generado
-necesita un demonio Docker para sus tests de integración (Testcontainers) y para su `compose-app.yml`.
+necesita un demonio Docker para sus tests de integración (Testcontainers) y para su `compose.yaml`.
 Un entorno donde solo se puede compilar deja el `mvn verify` sin correr — que es justo donde viven los
 fallos caros. Y el arquetipo se vende como *«descárgalo y trabaja con agentes»*: si la caja donde se
 desarrolla no puede correr Docker, esa promesa es falsa.
@@ -334,7 +334,7 @@ en la que publicas.
   el arquetipo*. El de `src/main/resources/archetype-resources/.devcontainer/` es **la plantilla que se
   copia a los proyectos generados**. Tocar uno no cambia el otro. (Antes eran `base/` y `full/`; se
   colapsaron en uno solo, también con Docker, porque el proyecto generado lo necesita para
-  Testcontainers y para su `compose-app.yml` — y porque ninguno de los dos era JSON válido: llevaban las
+  Testcontainers y para su `compose.yaml` — y porque ninguno de los dos era JSON válido: llevaban las
   claves sin comillas, así que ese devcontainer nunca llegó a abrir.)
 - ⚠️ **`devcontainer.json` es JSONC: admite comentarios, pero las claves VAN ENTRECOMILLADAS.** Un
   `name:` suelto no parsea y el devcontainer no abre. Comprobación barata:

@@ -50,7 +50,7 @@ mi-servicio/
 ├── client-java/      cliente Java generado del contrato
 ├── client-python/    cliente Python generado del contrato
 ├── helm/             chart de despliegue, con values por entorno
-├── compose-app.yml · Dockerfile · .devcontainer/
+├── compose.yaml · Dockerfile · .devcontainer/
 ```
 
 ### Lo que trae dentro

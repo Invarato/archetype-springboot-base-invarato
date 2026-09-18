@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Testcontainers
 class CacheIT {
 
-    // ⚠️ La MISMA version que compose-app.yml. Estuvieron descuadradas (los tests con Redis 7, el
+    // ⚠️ La MISMA version que compose.yaml. Estuvieron descuadradas (los tests con Redis 7, el
     // entorno real con Redis 8), que es la peor forma de descuadre: los tests dan verde sobre un motor
     // que no es el que se despliega. Lo vigila la comprobacion C9 de scripts/check-generated.sh.
     @Container

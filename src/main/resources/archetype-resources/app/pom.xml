@@ -245,7 +245,7 @@
                     <!--
                       La aplicacion se arranca desde la RAIZ del reactor, no desde app/.
                       `mvn -pl app spring-boot:run` correria dentro de app/, y entonces cualquier ruta
-                      relativa de la configuracion apunta al sitio equivocado: `compose-app.yml` esta en
+                      relativa de la configuracion apunta al sitio equivocado: `compose.yaml` esta en
                       la raiz y el soporte de Docker Compose no lo encontraba. El sintoma era la
                       aplicacion quejandose de que no hay DataSource, que no lleva a este fichero.
                     -->

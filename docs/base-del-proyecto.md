@@ -40,7 +40,7 @@ Destino de lo generado: microservicios distribuibles, contenedorizados y despleg
 ├── client-java/               cliente Java generado del contrato
 ├── client-python/             cliente Python generado del contrato
 ├── helm/<artifactId>/         chart de despliegue, con values por entorno
-├── compose-app.yml · Dockerfile · .devcontainer/
+├── compose.yaml · Dockerfile · .devcontainer/
 ```
 
 **Por qué.** La necesidad real y repetida son **clientes Java y Python, stubs y el `openapi.json`**, que hoy
@@ -111,7 +111,7 @@ esto esté estable y publicado.
 solo para el firewall) y `with-docker` para lo que exigiera un demonio. Se mantuvo un día.
 
 **Por qué se cayó.** Porque dejaba fuera justo lo que hay que comprobar. El proyecto generado necesita Docker
-para sus tests de integración (Testcontainers) y para su `compose-app.yml`; un entorno donde solo se puede
+para sus tests de integración (Testcontainers) y para su `compose.yaml`; un entorno donde solo se puede
 compilar deja el `mvn verify` sin correr. Y el arquetipo se vende como *«descárgalo y trabaja con agentes»*:
 si la caja donde se desarrolla no puede correr Docker, la promesa es falsa. El argumento no fue teórico — lo
 levantó el propio uso, al quedar los `*IT` sin verificar tras el paso 3.
@@ -231,7 +231,7 @@ Volver a anadirlo el dia que haga falta son unas 50 lineas de YAML.
 **Y se quitan los despliegues de Postgres y Redis**, que eran una trampa: el ejemplo desplegaba Postgres
 como `Deployment` con un `PersistentVolumeClaim`. Eso es perdida de datos esperando a pasar —no tolera
 escalado ni actualizaciones rolling— y como *ejemplo a copiar* es peligroso. En un cluster real va un
-servicio gestionado o un operador; el local ya lo cubre `compose-app.yml`.
+servicio gestionado o un operador; el local ya lo cubre `compose.yaml`.
 
 **Verificado con Helm de verdad** (`helm lint` + `helm template` en un contenedor efimero), no por
 inspeccion. Es lo que destapo G29.
@@ -383,7 +383,7 @@ cadena de build propia.
 ### D15 · El compose de desarrollo lo levanta Spring Boot (2026-09-18)
 
 `make run` ya no necesita `make docker-up` delante: en el perfil `dev`, Spring Boot levanta
-`compose-app.yml`, **espera a que los servicios estén sanos** y deduce de ahí las conexiones. Arrancar es
+`compose.yaml`, **espera a que los servicios estén sanos** y deduce de ahí las conexiones. Arrancar es
 una orden, o el botón del IDE.
 
 Estaba desactivado por dos razones, y las dos eran ciertas pero no definitivas:
@@ -395,7 +395,7 @@ Estaba desactivado por dos razones, y las dos eran ciertas pero no definitivas:
   la raíz del reactor.
 
 **Lo que se gana no es sólo comodidad.** El perfil `dev` repetía usuario, contraseña y puertos que ya
-declara `compose-app.yml`: dos sitios con el mismo dato, y el día que se separan el error es
+declara `compose.yaml`: dos sitios con el mismo dato, y el día que se separan el error es
 «password authentication failed», que no señala a nadie. Ahora esos datos están en un solo sitio.
 
 **Lo que costó:** arreglar la activación del perfil de Maven destapó dos problemas latentes (G48, G49).
@@ -630,6 +630,13 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   digest (Skaffold lo hace: 64 caracteres) para que el API server rechace ConfigMap, Service y
   Deployment a la vez con «must be no more than 63 characters». Regla: **todo lo que llegue a un nombre
   o a una etiqueta desde un `value` pasa por `trunc 63`**, no solo lo que construyen los helpers.
+- **G52 · El fichero de compose se llamaba `compose-app.yml`, un nombre que no busca nadie.** El `-app`
+  venia de querer separarlo de otros compose y acabo sobrando. Ahora es `compose.yaml`, que es el nombre
+  preferido por la especificacion de Compose Y el primero que busca Spring Boot (junto a `compose.yml`,
+  `docker-compose.yaml` y `docker-compose.yml`). Con eso se puede **borrar** `spring.docker.compose.file`,
+  y el mensaje de error mejora: sin esa propiedad, Boot dice «No Docker Compose file found in directory
+  '...'» —nombrando el directorio donde busco, que es el dato que hace falta porque la busqueda es
+  relativa al directorio de trabajo—; con la propiedad solo dice que ese fichero debe existir.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el
@@ -657,7 +664,7 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   `make run` no arrancaba.
 - **G23 · `spring.docker.compose.file` es una ruta RELATIVA al directorio de trabajo.** Al pasar a
   multi-módulo, la app se arranca con `mvn -pl app`, el proceso corre desde `app/` y dejaba de encontrar
-  el `compose-app.yml` de la raíz. Mismo síntoma engañoso que G22. Se resolvió declarando la conexión
+  el `compose.yaml` de la raíz. Mismo síntoma engañoso que G22. Se resolvió declarando la conexión
   explícitamente en el perfil `dev` y **desactivando** el soporte de compose: `make docker-up` ya
   levantaba los servicios, así que había dos mecanismos para lo mismo.
 - **G24 · `@WithMockUser` NO autentica con `SessionCreationPolicy.STATELESS`.** No hay repositorio de
