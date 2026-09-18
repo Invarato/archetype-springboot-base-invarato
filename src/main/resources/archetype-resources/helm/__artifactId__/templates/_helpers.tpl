@@ -31,7 +31,14 @@ kubectl, las herramientas de coste y los paneles para agrupar por aplicacion y p
 {{- define "app.labels" -}}
 app.kubernetes.io/name: {{ include "app.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+{{/*
+  ⚠️ El `trunc 63` de aqui no sobra. Esta es la unica etiqueta que se construye a partir de un VALUE, y
+  por eso se escapo del truncado que si tienen los nombres: una herramienta de despliegue que etiquete
+  la imagen con el digest (skaffold lo hace: 64 caracteres) genera una etiqueta invalida y el API server
+  rechaza el despliegue entero con «must be no more than 63 characters». No lo cazan ni `helm lint` ni
+  `helm template`: solo se ve desplegando contra un cluster de verdad.
+*/}}
+app.kubernetes.io/version: {{ .Values.image.tag | default .Chart.AppVersion | trunc 63 | trimSuffix "-" | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end -}}

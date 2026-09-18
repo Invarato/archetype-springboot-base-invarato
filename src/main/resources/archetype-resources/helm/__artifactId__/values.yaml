@@ -12,7 +12,9 @@
 replicaCount: 1
 
 image:
-  repository: ${artifactId}
+  # Vacio = el nombre saneado del chart (minusculas). Docker y Kubernetes RECHAZAN los nombres de
+  # imagen con mayusculas, y un artifactId en camelCase los traía tal cual.
+  repository: ""
   # La etiqueta la pone el despliegue (--set image.tag=X.Y.Z). `latest` en un cluster impide saber que
   # version esta corriendo y hace irrepetible un rollback.
   tag: ""
@@ -45,7 +47,14 @@ database:
 # creado fuera de git (gestor de secretos de la nube, External Secrets, Sealed Secrets o, como minimo,
 # `kubectl create secret`). Poner credenciales en un values.yaml versionado las publica en el historial
 # para siempre, y rotarlas despues no las borra de ahi.
-existingSecret: ${artifactId}-secret
+#
+# ⚠️ Vacio = se usa «<nombre-del-release>-secret», ya en minusculas y saneado.
+#
+# Antes ponia aqui el artifactId tal cual, y con un nombre en camelCase el despliegue lo rechazaba el
+# API server: «a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters». Ni
+# `helm lint` ni `helm template` lo ven —es el servidor quien valida los nombres—, asi que solo aparecia
+# al desplegar. Tercera vez que el mismo tipo de fallo muerde en otra herramienta (ver G29 y G46).
+existingSecret: ""
 
 resources:
   requests:

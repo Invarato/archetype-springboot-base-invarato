@@ -26,7 +26,7 @@ spec:
         runAsUser: {{ .Values.securityContext.runAsUser }}
       containers:
         - name: {{ include "app.name" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository | default (include "app.fullname" .) }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
@@ -49,12 +49,12 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret }}
+                  name: {{ .Values.existingSecret | default (printf "%s-secret" (include "app.fullname" .)) }}
                   key: db-username
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret }}
+                  name: {{ .Values.existingSecret | default (printf "%s-secret" (include "app.fullname" .)) }}
                   key: db-password
           # startupProbe: da margen al arranque sin relajar liveness. Es la que evita el clasico bucle
           # de reinicios en un arranque lento, que parece un fallo de la aplicacion y no lo es.

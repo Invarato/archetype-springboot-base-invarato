@@ -239,6 +239,15 @@ inspeccion. Es lo que destapo G29.
 **Que la reabriria.** Necesitar iterar contra un cluster a diario: ahi skaffold, Tilt o DevSpace vuelven a
 tener sentido.
 
+> **Reabierta a medias el 2026-09-18.** Hacia falta ese bucle, asi que existe como
+> [receta](recetas/kubernetes-local.md) —kind + Skaffold desplegando el chart que ya hay—, verificada
+> contra un cluster de verdad dentro del devcontainer. **Sigue fuera del arquetipo por defecto**: la
+> configuracion de Skaffold es una eleccion de equipo, y el bucle normal (`make run`) es mas rapido que
+> cualquier cluster. La decision original aguanta; lo que cambia es que ahora el camino esta escrito.
+>
+> Y montar la receta destapo dos fallos del chart que llevaban ahi desde el principio (G50, G51): los
+> nombres de objeto no los valida `helm lint`, los valida el API server.
+
 ### D11 · Cobertura, javadoc como contrato, y la API contra su propio contrato (2026-09-10)
 
 **JaCoCo, sin umbral que rompa el build.** La cobertura sirve para **ver qué no está probado**, no como
@@ -608,6 +617,19 @@ Numerados para poder citarlos. **No los redescubras ni los "arregles" otra vez.*
   documentacion de Spring Boot dice que esa propiedad sigue inicializando el classloader de reinicio.
   Paso: con ella, `CacheIT` en solitario pasaba y en la suite completa fallaba. La solucion es sacarlo
   del classpath con `classpathDependencyExcludes` en surefire y failsafe.
+- **G50 · `helm lint` y `helm template` NO validan los nombres de objeto.** El chart llevaba
+  `existingSecret: ${artifactId}-secret` e `image.repository: ${artifactId}`, o sea el nombre del
+  proyecto en crudo. Con un artifactId en camelCase, el despliegue lo rechaza el API server: «a
+  lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters». G29 se dio por
+  cerrado con `helm lint` + `helm template` y **no bastaba**: esas dos ordenes comprueban que el YAML se
+  renderiza, no que Kubernetes lo acepte. Solo aparecio desplegando contra un cluster de verdad. Ahora
+  los dos valores van vacios por defecto y se derivan del helper que ya saneaba los nombres.
+- **G51 · Una etiqueta de mas de 63 caracteres tumba el despliegue entero.** `app.kubernetes.io/version`
+  se construia con `.Values.image.tag`, y es la UNICA etiqueta que sale de un value — por eso se escapo
+  del `trunc 63` que si tenian los nombres. Basta con una herramienta que etiquete la imagen con el
+  digest (Skaffold lo hace: 64 caracteres) para que el API server rechace ConfigMap, Service y
+  Deployment a la vez con «must be no more than 63 characters». Regla: **todo lo que llegue a un nombre
+  o a una etiqueta desde un `value` pasa por `trunc 63`**, no solo lo que construyen los helpers.
 - **G29 · Helm: los nombres de objeto deben ser RFC 1123 (minusculas), y `regexReplaceAll` no encadena.**
   Dos fallos en el mismo helper, los dos silenciosos. Primero: un `artifactId` en camelCase genera objetos
   que Helm renderiza sin quejarse y que **el API server rechaza al desplegar** — el fallo aparece en el

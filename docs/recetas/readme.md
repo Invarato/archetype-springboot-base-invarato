@@ -27,6 +27,7 @@ comprobar que lo has montado bien.
 | **[Kafka](kafka.md)** | Publicar y consumir eventos, con un test contra un broker real | Los listeners metían **14 errores de conexión** en tests que no usan Kafka |
 | **[WebSocket](websocket.md)** | Un endpoint con eco y su test de ida y vuelta | El handshake da **401**: la seguridad del arquetipo también lo protege |
 | **[gRPC](grpc.md)** | Servicio gRPC generado desde un `.proto`, con test autenticado | Igual que arriba: el servicio nace **protegido**, y hay que llevar el token en la metadata |
+| **[Kubernetes local](kubernetes-local.md)** | Un clúster de verdad en tu máquina, con cada cambio desplegándose solo | `helm lint` no valida los nombres de objeto: desplegar destapó **dos fallos del chart** |
 
 Los ejemplos usan `com.ejemplo` como paquete base. Sustitúyelo por el tuyo — el mismo que le diste al
 generar el proyecto.
